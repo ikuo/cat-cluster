@@ -1,5 +1,9 @@
 ## Running
 
+```
+sbt> assembly
+```
+
 1) sbt:
 
 ```
