@@ -8,7 +8,7 @@ sbt> re-start
 
 ```
 $ eb init
-$ eb create -ip aws-elasticbeanstalk-ec2-role
+$ eb create -i t2.micro -ip aws-elasticbeanstalk-ec2-role
 ```
 
 ## Example of config.yml
