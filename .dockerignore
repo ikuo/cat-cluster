@@ -1,0 +1,4 @@
+src
+.elasticbeanstalk/
+target/
+!target/scala-2.12/cat-cluster-assembly-*.jar

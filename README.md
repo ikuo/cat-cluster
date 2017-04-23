@@ -1,3 +1,11 @@
+## Running
+
+```
+$ eb init
+$ eb create -ip eb-multicontainer-role
+```
+
+## Example of config.yml
 
 Put the following as `.elasticbeanstalk/config.yml`
 
@@ -14,7 +22,7 @@ global:
   default_ec2_keyname: yubikey9a
   default_platform: multi-container-docker-1.12.6-(generic)
   default_region: ap-northeast-1
-  instance_profile: null
+  instance_profile: eb-multicontainer-role
   platform_name: null
   platform_version: null
   profile: null
