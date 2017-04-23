@@ -8,6 +8,9 @@ lazy val root = (project in file(".")).
       version      := "0.1.0-SNAPSHOT"
     )),
     name := "cat-cluster",
-    libraryDependencies += specs2 % Test,
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-cluster" % "2.5.0",
+      specs2 % Test
+    ),
     scalacOptions in Test ++= Seq("-Yrangepos")
   )

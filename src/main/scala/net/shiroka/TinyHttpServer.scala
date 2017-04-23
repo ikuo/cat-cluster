@@ -10,9 +10,10 @@ object TinyHttpServer {
     })
     server.setExecutor(null)
     server.start()
-    println("Hit any key to exit...")
-    System.in.read()
-    server.stop(0)
+    println("HTTP server started")
+    //println("Hit any key to exit...")
+    //System.in.read()
+    //server.stop(0)
   }
 
   private def sendResponse(he: HttpExchange, response: String): Unit = {
