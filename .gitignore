@@ -1,5 +1,5 @@
 target/
-
+log/*.*
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*

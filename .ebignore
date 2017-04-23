@@ -1,6 +1,7 @@
 src/
 project/
 target/
+log/*.*
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
