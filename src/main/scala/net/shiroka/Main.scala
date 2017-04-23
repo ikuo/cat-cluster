@@ -1,5 +1,5 @@
 package net.shiroka
 
 object Main extends App {
-  TinyHttpServer.serve
+  TinyHttpServer.serve(8080)
 }

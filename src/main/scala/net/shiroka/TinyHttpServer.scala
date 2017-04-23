@@ -3,8 +3,8 @@ import java.net.InetSocketAddress
 import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
 
 object TinyHttpServer {
-  def serve: Unit = {
-    val server = HttpServer.create(new InetSocketAddress(8080), 0)
+  def serve(port: Int): Unit = {
+    val server = HttpServer.create(new InetSocketAddress(port), 0)
     server.createContext("/", new HttpHandler() {
       def handle(he: HttpExchange): Unit = sendResponse(he, "ok\n")
     })
