@@ -1,6 +1,12 @@
 ## Running
 
 ```
+sbt> re-start
+```
+
+## Deploying
+
+```
 $ eb init
 $ eb create -ip aws-elasticbeanstalk-ec2-role
 ```

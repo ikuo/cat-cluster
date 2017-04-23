@@ -11,8 +11,6 @@ object TinyHttpServer {
     server.setExecutor(null)
     server.start()
     println("HTTP server started")
-    //println("Hit any key to exit...")
-    //System.in.read()
     //server.stop(0)
   }
 
