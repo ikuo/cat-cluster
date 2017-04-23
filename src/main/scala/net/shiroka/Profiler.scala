@@ -34,7 +34,7 @@ class Profiler extends Actor {
 
 object Profiler {
   object Profile
-  val filename = "log/profile.tsv"
+  val filename = "log/profile.log"
   val interval = 10
   def run(system: ActorSystem): Unit = {
     system.actorOf(props)
