@@ -14,6 +14,7 @@ class Profiler extends Actor {
   implicit val ec: ExecutionContext = context.dispatcher
 
   override def preStart: Unit = {
+    super.preStart
     system.scheduler.schedule(2.seconds, interval.seconds, self, Profile)
   }
 
