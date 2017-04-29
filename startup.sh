@@ -13,4 +13,8 @@ java \
   -Xmx$MAX_HEAP_SIZE \
   -Dakka.cluster.seed-nodes.0=$SEED_ADDR \
   -Dconfig.resource=$CONFIG \
+  -Dcom.sun.management.jmxremote \
+  -Dcom.sun.management.jmxremote.port=7900 \
+  -Dcom.sun.management.jmxremote.ssl=false \
+  -Dcom.sun.management.jmxremote.authenticate=false \
   -jar cat-cluster.jar
