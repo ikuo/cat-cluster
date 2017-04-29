@@ -6,7 +6,11 @@ export AKKA_HOSTNAME
 echo Using SEED_ADDR: ${SEED_ADDR:=akka.tcp://cluster@127.0.0.1:2551}
 export SEED_ADDR
 
+echo Using MAX_HEAP_SIZE: ${MAX_HEAP_SIZE:=200m}
+export MAX_HEAP_SIZE
+
 java \
+  -Xmx$MAX_HEAP_SIZE \
   -Dakka.cluster.seed-nodes.0=$SEED_ADDR \
   -Dconfig.resource=$CONFIG \
   -jar cat-cluster.jar

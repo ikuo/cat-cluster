@@ -1,20 +1,56 @@
-seed:
-  image: ikuo/cat-cluster:latest
-  ports: ["8081:8080", "2551:2551"]
-  environment:
-    CONFIG: /seed.conf
-    SEED_ADDR: akka.tcp://cluster@seed:2551
-    AKKA_HOSTNAME: seed
+version: '2'
 
-cat1:
-  image: ikuo/cat-cluster:latest
-  ports: ["8082:8080", "2552:2552"]
-  environment:
-    CONFIG: /cat.conf
-    SEED_ADDR: akka.tcp://cluster@seed:2551
-    AKKA_HOSTNAME: cat1
-    AKKA_PORT: 2552
-    SENSOR_INTERVAL: 100.millis
-    PROFILER_STDOUT: 'true'
-  links:
-    - seed:seed
+services:
+  seed:
+    image: ikuo/cat-cluster:latest
+    ports: ["8081:8080", "2551:2551"]
+    environment:
+      CONFIG: /seed.conf
+      SEED_ADDR: akka.tcp://cluster@seed:2551
+      AKKA_HOSTNAME: seed
+
+  cat2: &cat
+    image: ikuo/cat-cluster:latest
+    ports: ["8082:8080", "2552:2551"]
+    environment: &environment
+      CONFIG: /cat.conf
+      SEED_ADDR: akka.tcp://cluster@seed:2551
+      AKKA_HOSTNAME: cat2
+      SENSOR_INTERVAL: 20.millis
+      PROFILER_STDOUT: 'true'
+  cat3:
+    <<: *cat
+    ports: ["8083:8080", "2553:2551"]
+    environment:
+      <<: *environment
+      AKKA_HOSTNAME: cat3
+  cat4:
+    <<: *cat
+    ports: ["8084:8080", "2554:2551"]
+    environment:
+      <<: *environment
+      AKKA_HOSTNAME: cat4
+  cat5:
+    <<: *cat
+    ports: ["8085:8080", "2555:2551"]
+    environment:
+      <<: *environment
+      AKKA_HOSTNAME: cat5
+  cat6:
+    <<: *cat
+    ports: ["8086:8080", "2556:2551"]
+    environment:
+      <<: *environment
+      AKKA_HOSTNAME: cat6
+  cat7:
+    <<: *cat
+    ports: ["8087:8080", "2557:2551"]
+    environment:
+      <<: *environment
+      AKKA_HOSTNAME: cat7
+  cat8:
+    <<: *cat
+    ports: ["8088:8080", "2558:2551"]
+    environment:
+      <<: *environment
+      AKKA_HOSTNAME: cat8

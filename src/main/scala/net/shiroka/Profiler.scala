@@ -29,7 +29,15 @@ class Profiler extends Actor {
     val rt = Runtime.getRuntime
     val numEntities = stats.values.map(_.stats.values.sum).sum
 
-    val line = Seq(now, numEntities, rt.totalMemory, rt.freeMemory, rt.maxMemory).mkString("\t")
+    val line = Seq(
+      now,
+      numEntities,
+      rt.totalMemory - rt.freeMemory,
+      rt.totalMemory,
+      rt.freeMemory,
+      rt.maxMemory
+    ).mkString("\t")
+
     if (stdout) {
       println(line)
     } else {

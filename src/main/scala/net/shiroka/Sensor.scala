@@ -18,7 +18,7 @@ class Sensor(val random: Random = new Random()) extends Actor {
 
   def receive = {
     case Start => start
-    case Sense => cat ! Cat.Meow(randomCatId)
+    case Sense => (0 until batchSize).foreach(_ => cat ! Cat.Meow(randomCatId))
   }
 
   private def start: Unit =
@@ -30,6 +30,7 @@ class Sensor(val random: Random = new Random()) extends Actor {
 object Sensor {
   val config = ConfigFactory.load.getConfig("net.shiroka.sensor")
   val interval = config.as[FiniteDuration]("interval")
+  val batchSize = config.as[Int]("batch.size")
   val maxCats = config.as[Int]("cats.max")
   object Start
   object Sense
