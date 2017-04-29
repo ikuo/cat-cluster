@@ -11,6 +11,7 @@ lazy val root = (project in file(".")).
     libraryDependencies ++= Seq(
       akka("cluster"),
       akka("cluster-sharding"),
+      ficus,
       specs2 % Test
     ),
     scalacOptions in Test ++= Seq("-Yrangepos")

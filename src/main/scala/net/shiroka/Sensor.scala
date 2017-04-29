@@ -6,6 +6,8 @@ import scala.concurrent.ExecutionContext
 import akka.actor._
 import akka.cluster._
 import akka.cluster.sharding._
+import net.ceedubs.ficus.Ficus._
+import com.typesafe.config.ConfigFactory
 
 class Sensor(val random: Random = new Random()) extends Actor {
   import Sensor._
@@ -16,16 +18,19 @@ class Sensor(val random: Random = new Random()) extends Actor {
 
   def receive = {
     case Start => start
+    case Sense => cat ! Cat.Meow(randomCatId)
   }
 
   private def start: Unit =
-    system.scheduler.schedule(2.seconds, interval.seconds, cat, Cat.Meow(randomCatId))
+    system.scheduler.schedule(2.seconds, interval, self, Sense)
 
   private def randomCatId: String = s"cat-${ random.nextInt(maxCats) }"
 }
 
 object Sensor {
-  val interval = 1
-  val maxCats = 10000
+  val config = ConfigFactory.load.getConfig("net.shiroka.sensor")
+  val interval = config.as[FiniteDuration]("interval")
+  val maxCats = config.as[Int]("cats.max")
   object Start
+  object Sense
 }
