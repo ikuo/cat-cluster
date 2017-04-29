@@ -5,6 +5,8 @@ import scala.concurrent.ExecutionContext
 import java.io._
 import java.util.Date
 import java.text.SimpleDateFormat
+import com.typesafe.config.ConfigFactory
+import net.ceedubs.ficus.Ficus._
 
 class Profiler extends Actor {
   import Profiler._
@@ -15,7 +17,7 @@ class Profiler extends Actor {
 
   override def preStart: Unit = {
     super.preStart
-    system.scheduler.schedule(2.seconds, interval.seconds, self, Profile)
+    system.scheduler.schedule(2.seconds, interval, self, Profile)
   }
 
   def receive = {
@@ -24,19 +26,27 @@ class Profiler extends Actor {
 
   def profile: Unit = {
     val rt = Runtime.getRuntime
-    val row = Seq(now, rt.totalMemory, rt.freeMemory, rt.maxMemory)
-    val out = new PrintWriter(new FileOutputStream(new File(filename), true))
-    try { out.println(row.mkString("\t")) }
-    finally { out.close() }
+    val line = Seq(now, rt.totalMemory, rt.freeMemory, rt.maxMemory).mkString("\t")
+    if (stdout) {
+      println(line)
+    } else {
+      val out = new PrintWriter(new FileOutputStream(new File(filename), true))
+      try { out.println(line) }
+      finally { out.close() }
+    }
   }
 
   def now = df.format(new Date())
 }
 
 object Profiler {
-  object Profile
+  val config = ConfigFactory.load.getConfig("net.shiroka.profiler")
+  val interval = config.as[FiniteDuration]("interval")
+  val stdout = config.as[Boolean]("stdout")
   val filename = "log/profile.log"
-  val interval = 10
+
+  object Profile
+
   def run(system: ActorSystem): Unit = {
     system.actorOf(props)
   }

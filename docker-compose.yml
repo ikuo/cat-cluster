@@ -14,5 +14,7 @@ cat1:
     SEED_ADDR: akka.tcp://cluster@seed:2551
     AKKA_HOSTNAME: cat1
     AKKA_PORT: 2552
+    SENSOR_INTERVAL: 100.millis
+    PROFILER_STDOUT: 'true'
   links:
     - seed:seed
