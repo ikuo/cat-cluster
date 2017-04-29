@@ -1,6 +1,8 @@
 #!/bin/sh
 
-echo Using AKKA_HOSTNAME: ${AKKA_HOSTNAME:=`curl http://169.254.169.254/latest/meta-data/local-ipv4`}
+echo ${AKKA_HOSTNAME:=$HOSTNAME}
+echo ${AKKA_HOSTNAME:=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)}
+echo Using AKKA_HOSTNAME: ${AKKA_HOSTNAME}
 export AKKA_HOSTNAME
 
 echo Using SEED_ADDR: ${SEED_ADDR:=akka.tcp://cluster@127.0.0.1:2551}
@@ -11,6 +13,7 @@ export MAX_HEAP_SIZE
 
 java \
   -Xmx$MAX_HEAP_SIZE \
+  -Xloggc:./log/gc.log -XX:+PrintGCDetails \
   -Dakka.cluster.seed-nodes.0=$SEED_ADDR \
   -Dconfig.resource=$CONFIG \
   -Dcom.sun.management.jmxremote \
