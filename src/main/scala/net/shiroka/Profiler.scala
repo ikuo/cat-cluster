@@ -16,6 +16,7 @@ class Profiler extends Actor {
 
   val system = context.system
   val df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z")
+  val hostName = sys.env("AKKA_HOSTNAME")
   lazy val region = ClusterSharding(context.system).shardRegion(Cat.shardingName)
   implicit val ec: ExecutionContext = context.dispatcher
 
@@ -31,6 +32,7 @@ class Profiler extends Actor {
 
     val line = Seq(
       now,
+      hostName,
       numEntities,
       memString(rt.totalMemory - rt.freeMemory),
       memString(rt.totalMemory),
