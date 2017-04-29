@@ -10,7 +10,6 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     implicit val system = ActorSystem("cluster")
-    Profiler.run(system)
 
     primaryRole match {
       case "seed" => Cat.startProxy
@@ -19,6 +18,8 @@ object Main {
         system.actorOf(Props(classOf[Sensor], new Random()), "cat") ! Sensor.Start
       case role => sys.error(s"Unexpected role $role")
     }
+
+    Profiler.run(system)
 
     TinyHttpServer.serve(8080)
   }
