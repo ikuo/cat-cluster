@@ -32,10 +32,10 @@ class Profiler extends Actor {
     val line = Seq(
       now,
       numEntities,
-      rt.totalMemory - rt.freeMemory,
-      rt.totalMemory,
-      rt.freeMemory,
-      rt.maxMemory
+      memString(rt.totalMemory - rt.freeMemory),
+      memString(rt.totalMemory),
+      memString(rt.freeMemory),
+      memString(rt.maxMemory)
     ).mkString("\t")
 
     if (stdout) {
@@ -46,6 +46,8 @@ class Profiler extends Actor {
       finally { out.close() }
     }
   }
+
+  def memString(usage: Long) = "%.6f".format(usage.toDouble * 1e-6)
 
   def now = df.format(new Date())
 }
