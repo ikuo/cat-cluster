@@ -1,0 +1,39 @@
+---
+params:
+  directory: '../log'
+---
+
+
+```{r setup}
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+```
+
+```{r load data}
+datasrc.files <- function(dir) {
+  list.files(dir, pattern = "catcluster.*.log", recursive = TRUE, full.names = TRUE)
+}
+
+datasrc.load.one <-function(file) {
+  fread(
+    file,
+    col.names = c('time', 'member', 'num.entities', 'mem.used', 'mem.total', 'mem.free', 'mem.max')
+  ) %>%
+    mutate(
+      time = parse_date_time2(time, "%Y-%m-%d %H:%M:%S"),
+      member = factor(member)
+    )
+}
+
+datasrc.load <- function(dir) {
+  rbindlist(lapply(datasrc.files(dir), datasrc.load.one))
+}
+
+df <- datasrc.load(params$directory)
+```
+
+```{r}
+g <- ggplot(df, aes(x = num.entities, y = mem.used, color = member)) + geom_point()
+plot(g)
+```
