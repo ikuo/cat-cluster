@@ -1,6 +1,7 @@
 package net.shiroka
 
 import akka.actor._
+import akka.cluster._
 import akka.cluster.sharding._
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
@@ -22,18 +23,20 @@ class Profiler extends Actor {
   def receive = {
     case ClusterShardingStats(stats) => profile(stats)
     case Start =>
-      system.scheduler.schedule(2.seconds, interval, region, GetClusterShardingStats(20.seconds))
+        system.scheduler.schedule(2.seconds, interval, region, GetClusterShardingStats(20.seconds))
   }
 
   def profile(stats: Map[Address, ShardRegionStats]): Unit = {
     val rt = Runtime.getRuntime
     val numEntities = stats.values.map(_.stats.values.sum).sum
+    val used = rt.totalMemory - rt.freeMemory
 
     val line = Seq(
       now,
       hostName,
+      if (Cat.rememberEntities) 1 else 0,
       numEntities,
-      memString(rt.totalMemory - rt.freeMemory),
+      memString(used),
       memString(rt.totalMemory),
       memString(rt.freeMemory),
       memString(rt.maxMemory)
@@ -45,6 +48,11 @@ class Profiler extends Actor {
       val out = new PrintWriter(new FileOutputStream(new File(filename), true))
       try { out.println(line) }
       finally { out.close() }
+    }
+
+    if (used.toDouble / rt.maxMemory > 0.85) {
+      println("System.exit() due to too much memory usage")
+      sys.exit(1)
     }
   }
 

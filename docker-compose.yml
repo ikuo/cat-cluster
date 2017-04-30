@@ -10,12 +10,23 @@ services:
       SEED_ADDR: akka.tcp://cluster@seed:2551
       AKKA_HOSTNAME: seed
 
-  cat: &cat
+  cat:
     image: ikuo/cat-cluster:latest
     restart: always
-    environment: &environment
+    environment:
       CONFIG: /cat.conf
       SEED_ADDR: akka.tcp://cluster@seed:2551
+      MAX_HEAP_SIZE: 300m
+      PROFILER_STDOUT: 'false'
+      AKKA_HOSTNAME:
+
+  sensor:
+    image: ikuo/cat-cluster:latest
+    restart: always
+    environment:
+      CONFIG: /sensor.conf
+      SEED_ADDR: akka.tcp://cluster@seed:2551
       SENSOR_INTERVAL: 100.millis
-      PROFILER_STDOUT: 'true'
+      MAX_HEAP_SIZE: 30m
+      PROFILER_STDOUT: 'false'
       AKKA_HOSTNAME:

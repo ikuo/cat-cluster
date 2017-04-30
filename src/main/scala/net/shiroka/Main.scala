@@ -13,9 +13,10 @@ object Main {
 
     primaryRole match {
       case "seed" => Cat.startProxy
-      case "cat" =>
-        Cat.startSharding
-        system.actorOf(Props(classOf[Sensor], new Random()), "cat") ! Sensor.Start
+      case "sensor" =>
+        Cat.startProxy
+        system.actorOf(Props(classOf[Sensor], new Random()), "cat")
+      case "cat" => Cat.startSharding
       case role => sys.error(s"Unexpected role $role")
     }
 
