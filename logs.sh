@@ -5,20 +5,33 @@ set -eu
 function usage_exit {
   cat <<EOS
 Usage:
-  $0 pull-dc
+  $0 pull [<instance-id>]
   $0 package
-  $0 pull-ec2 <instance-id>
 EOS
   exit 1
 }
 
 if [ $# -eq 0 ]; then usage_exit; fi
 
-function pull_dc {
+function pull {
+  if [ $# -eq 0 ]; then
+    pull_from_docker_compose
+  else
+    pull_from_ec2 "$@"
+  fi
+}
+
+function pull_from_docker_compose {
   target=./log
   sudo docker ps --format '{{.Names}}' \
     | grep '^catcluster_cat' \
     | xargs -n 1 -I {} sudo docker cp {}:/opt/cat-cluster/log/profile.log $target/{}.profile.log
+}
+
+function pull_from_ec2 {
+  key=$1
+  ip=$(ec2 ip $key)
+  scp ikuo@$ip:/home/ikuo/work/cat-cluster/log/logs.gz log/
 }
 
 function package {
@@ -32,7 +45,7 @@ subcommand=$1
 shift
 
 case $subcommand in
-  pull-dc) pull_dc "$@" ;;
+  pull) pull "$@" ;;
   package) package "$@" ;;
   *) usage_exit ;;
 esac
