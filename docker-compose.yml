@@ -1,32 +1,34 @@
 version: '2'
 
 services:
-  seed:
+  seed: &seed
     image: ikuo/cat-cluster:latest
     ports: ["8081:8080", "2551:2551"]
     restart: always
-    environment:
+    environment: &environment
       CONFIG: /seed.conf
       SEED_ADDR: akka.tcp://cluster@seed:2551
       AKKA_HOSTNAME: seed
+      CATS_MAX: 120e+6
+      CAT_REMEMBER_ENTITIES: 'false'
+      PROFILER_STDOUT: 'false'
 
   cat:
     image: ikuo/cat-cluster:latest
     restart: always
     environment:
+      <<: *environment
       CONFIG: /cat.conf
-      SEED_ADDR: akka.tcp://cluster@seed:2551
       MAX_HEAP_SIZE: 300m
-      PROFILER_STDOUT: 'false'
       AKKA_HOSTNAME:
 
   sensor:
     image: ikuo/cat-cluster:latest
     restart: always
     environment:
+      <<: *environment
       CONFIG: /sensor.conf
-      SEED_ADDR: akka.tcp://cluster@seed:2551
       SENSOR_INTERVAL: 100.millis
+      SENSOR_BATCH_SIZE: 100
       MAX_HEAP_SIZE: 30m
-      PROFILER_STDOUT: 'false'
       AKKA_HOSTNAME:

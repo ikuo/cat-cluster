@@ -21,7 +21,7 @@ object Cat extends Config {
   val shardingName = "cat"
   val shardingRole = "cat"
   val maxEntities = config.as[Int]("max-entities")
-  val numberOfShards = math.max(maxEntities / 10000, 200)
+  val numberOfShards = config.as[Int]("num-of-shards")
   val rememberEntities = config.as[Boolean]("remember-entities")
 
   trait Message { val catId: String }
