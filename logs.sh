@@ -6,7 +6,8 @@ function usage_exit {
   cat <<EOS
 Usage:
   $0 pull [<instance-id>]
-  $0 package
+  $0 pack
+  $0 unpack
 EOS
   exit 1
 }
@@ -34,11 +35,17 @@ function pull_from_ec2 {
   scp ikuo@$ip:/home/ikuo/work/cat-cluster/log/logs.gz log/
 }
 
-function package {
+function pack {
   base=./log
   target=$base/logs.gz
   tar zvcf $target --exclude "*.gz" --exclude ".gitkeep" --exclude "profile.log" $base
   echo Created $target
+}
+
+function unpack {
+  base=./log
+  target=$base/logs.gz
+  tar zxvf $target
 }
 
 subcommand=$1
@@ -46,6 +53,7 @@ shift
 
 case $subcommand in
   pull) pull "$@" ;;
-  package) package "$@" ;;
+  pack) pack "$@" ;;
+  unpack) unpack "$@" ;;
   *) usage_exit ;;
 esac
