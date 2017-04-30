@@ -4,6 +4,7 @@ import java.util.Optional
 import akka.actor._
 import akka.cluster._
 import akka.cluster.sharding._
+import net.ceedubs.ficus.Ficus._
 
 class Cat extends Actor {
   import Cat._
@@ -15,10 +16,12 @@ class Cat extends Actor {
   }
 }
 
-object Cat {
+object Cat extends Config {
+  val configKey = "cat"
   val shardingName = "cat"
   val shardingRole = "cat"
-  val maxNumberOfShards = 200
+  val maxNumberOfShards = config.as[Int]("max-num-of-shards")
+  val rememberEntities = config.as[Boolean]("remember-entities")
 
   trait Message { val catId: String }
   case class Meow(catId: String) extends Message
@@ -28,7 +31,9 @@ object Cat {
     ClusterSharding(system).start(
       typeName = Cat.shardingName,
       entityProps = Props(classOf[Cat]),
-      settings = ClusterShardingSettings(system).withRole(shardingRole),
+      settings = ClusterShardingSettings(system)
+        .withRole(shardingRole)
+        .withRememberEntities(rememberEntities),
       messageExtractor = messageExtractor)
   }
 

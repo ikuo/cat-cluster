@@ -7,7 +7,6 @@ import scala.concurrent.ExecutionContext
 import java.io._
 import java.util.Date
 import java.text.SimpleDateFormat
-import com.typesafe.config.ConfigFactory
 import net.ceedubs.ficus.Ficus._
 import ShardRegion._
 
@@ -54,8 +53,8 @@ class Profiler extends Actor {
   def now = df.format(new Date())
 }
 
-object Profiler {
-  val config = ConfigFactory.load.getConfig("net.shiroka.profiler")
+object Profiler extends Config {
+  val configKey = "profiler"
   val interval = config.as[FiniteDuration]("interval")
   val stdout = config.as[Boolean]("stdout")
   val filename = "log/profile.log"
