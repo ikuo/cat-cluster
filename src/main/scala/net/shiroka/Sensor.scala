@@ -47,14 +47,13 @@ class Sensor(val random: Random = new Random()) extends Actor {
       this.started = Some(system.scheduler.schedule(2.seconds, interval, self, Sense))
     }
 
-  private def randomCatId: String = s"cat-${ random.nextInt(maxCats) }"
+  private def randomCatId: String = s"cat-${ random.nextInt(Cat.maxEntities) }"
 }
 
 object Sensor extends Config {
   val configKey = "sensor"
   val interval = config.as[FiniteDuration]("interval")
   val batchSize = config.as[Int]("batch.size")
-  val maxCats = config.as[Int]("cats.max")
   object Start
   object Sense
 }

@@ -20,7 +20,8 @@ object Cat extends Config {
   val configKey = "cat"
   val shardingName = "cat"
   val shardingRole = "cat"
-  val maxNumberOfShards = config.as[Int]("max-num-of-shards")
+  val maxEntities = config.as[Int]("max-entities")
+  val numberOfShards = math.max(maxEntities / 10000, 200)
   val rememberEntities = config.as[Boolean]("remember-entities")
 
   trait Message { val catId: String }
@@ -45,7 +46,7 @@ object Cat extends Config {
   }
 
   val messageExtractor =
-    new ShardRegion.HashCodeMessageExtractor(maxNumberOfShards) {
+    new ShardRegion.HashCodeMessageExtractor(numberOfShards) {
       override def entityId(message: Any): String = message match {
         case msg: Message => msg.catId
       }
