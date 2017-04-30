@@ -8,7 +8,7 @@ ADD https://raw.githubusercontent.com/akka/akka/v2.5.0/akka-cluster/jmx-client/a
 RUN chmod a+x akka-cluster
 
 COPY target/scala-2.12/cat-cluster-assembly-0.1.0-SNAPSHOT.jar cat-cluster.jar
-COPY startup.sh .
+COPY bin/startup.sh .
 EXPOSE 8080
 RUN mkdir log
 
