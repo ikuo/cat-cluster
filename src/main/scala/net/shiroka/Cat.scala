@@ -10,7 +10,7 @@ import net.ceedubs.ficus.Ficus._
 class Cat extends PersistentActor {
   import Cat._
 
-  override val persistenceId: String = shardingName + "-" + self.path.name
+  override val persistenceId: String = self.path.name
 
   private var numMeow = 0
 

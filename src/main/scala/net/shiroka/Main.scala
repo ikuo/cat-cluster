@@ -9,19 +9,24 @@ object Main {
   val primaryRole: String = roles.headOption.getOrElse(sys.error("empty roles"))
 
   def main(args: Array[String]): Unit = {
-    implicit val system = ActorSystem("cluster")
+    implicit lazy val system = ActorSystem("cluster")
 
     primaryRole match {
-      case "seed" => Cat.startProxy
+      case "seed" =>
+        Cat.startProxy
+
       case "sensor" =>
         Cat.startProxy
         system.actorOf(Props(classOf[Sensor], new Random()), "cat")
-      case "cat" => Cat.startSharding
+
+      case "cat" =>
+        Cat.startSharding
+        journal.RedisSweeper.startSingleton("redis-sweeper", Some("cat"))
+
       case role => sys.error(s"Unexpected role $role")
     }
 
     Profiler.run(system)
-
     TinyHttpServer.serve(8080)
   }
 }
