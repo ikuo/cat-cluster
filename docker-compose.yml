@@ -1,6 +1,11 @@
 version: '2'
 
 services:
+  redis:
+    image: redis:2.8.23
+    expose:
+      - "6379"
+
   seed: &seed
     image: ikuo/cat-cluster:latest
     ports: ["8081:8080", "2551:2551"]
@@ -10,8 +15,9 @@ services:
       SEED_ADDR: akka.tcp://cluster@seed:2551
       AKKA_HOSTNAME: seed
       CATS_MAX: 120e+6
+      REDIS_HOST: redis
       CAT_REMEMBER_ENTITIES: 'false'
-      PROFILER_STDOUT: 'false'
+      PROFILER_STDOUT: 'true'
 
   cat:
     image: ikuo/cat-cluster:latest
@@ -28,7 +34,7 @@ services:
     environment:
       <<: *environment
       CONFIG: /sensor.conf
-      SENSOR_INTERVAL: 100.millis
-      SENSOR_BATCH_SIZE: 100
+      SENSOR_INTERVAL: 1000.millis
+      SENSOR_BATCH_SIZE: 1
       MAX_HEAP_SIZE: 30m
       AKKA_HOSTNAME:

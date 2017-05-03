@@ -4,15 +4,27 @@ import java.util.Optional
 import akka.actor._
 import akka.cluster._
 import akka.cluster.sharding._
+import akka.persistence._
 import net.ceedubs.ficus.Ficus._
 
-class Cat extends Actor {
+class Cat extends PersistentActor {
   import Cat._
+
+  override val persistenceId: String = shardingName + "-" + self.path.name
 
   private var numMeow = 0
 
-  def receive = {
+  override def receiveCommand = {
+    case msg: Message => persist(msg)(updateState)
+  }
+
+  override def receiveRecover = {
+    case msg: Message => updateState(msg)
+  }
+
+  def updateState(msg: Message): Unit = msg match {
     case msg: Meow => this.numMeow += 1
+    case _ =>
   }
 }
 

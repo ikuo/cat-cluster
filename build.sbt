@@ -1,4 +1,5 @@
 import Dependencies._
+import Resolvers._
 
 lazy val root = (project in file(".")).
   settings(
@@ -8,9 +9,11 @@ lazy val root = (project in file(".")).
       version      := "0.1.0-SNAPSHOT"
     )),
     name := "cat-cluster",
+    resolvers += ivyLocal,
     libraryDependencies ++= Seq(
       akka("cluster"),
       akka("cluster-sharding"),
+      akkaRedis,
       ficus,
       specs2 % Test
     ),
