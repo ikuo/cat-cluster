@@ -41,7 +41,7 @@ object Cat extends Config {
   val rememberEntities = config.as[Boolean]("remember-entities")
 
   trait Message { val catId: String }
-  case class Meow(catId: String) extends Message
+  case class Meow(catId: String, posixTime: Long) extends Message
   case class GetMeows(catId: String) extends Message
 
   def startSharding(implicit system: ActorSystem): Unit = {

@@ -23,7 +23,8 @@ class Sensor(val random: Random = new Random()) extends Actor {
   override def postStop(): Unit = cluster.unsubscribe(self)
 
   def receive = {
-    case Sense => (0 until batchSize).foreach(_ => cat ! Cat.Meow(randomCatId))
+    case Sense => (0 until batchSize).foreach(_ =>
+        cat ! Cat.Meow(randomCatId, System.currentTimeMillis() / 1000L))
     case state: CurrentClusterState =>
       state.members
         .find(member => member.status == MemberStatus.Up && member.address == cluster.selfAddress)
