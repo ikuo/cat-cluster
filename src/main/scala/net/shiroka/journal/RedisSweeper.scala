@@ -38,14 +38,13 @@ class RedisSweeper extends Actor with ActorLogging {
     self ! Start
   }
 
-  override def postStop: Unit = try {
-    redis.stop()
-  } finally {
-    super.postStop()
-  }
+  override def postStop: Unit = try redis.stop() finally super.postStop()
 
   def receive = {
     case Start => start
+    case SweepAck(id) =>
+      println(s"Sending ok: ${id} ############################################################")
+      sender ! Sweeped
   }
 
   private def start: Unit = {
@@ -59,7 +58,8 @@ class RedisSweeper extends Actor with ActorLogging {
           case id @ sweepableId(name) =>
             profiler ! id
             regions.getOrElseUpdate(name, ClusterSharding(system).shardRegion(name))
-              .ask(Sweep(id))(2.seconds)
+              .ask(Sweep(id))(2.seconds).mapTo[SweepAck]
+              .flatMap(self.ask(_)(2.seconds))
           case id => Future.failed(new RuntimeException(s"Malformed persistence Id: $id"))
         }).transform(identity, error("Failed to sweep entity"))
       ).withAttributes(supervisionStrategy(resumingDecider))
@@ -71,6 +71,9 @@ class RedisSweeper extends Actor with ActorLogging {
 }
 
 object RedisSweeper {
+  final object Start
+  private final object Sweeped
+
   private class IterationProfiler extends Actor {
     import java.io._
     import java.text.SimpleDateFormat
@@ -92,12 +95,9 @@ object RedisSweeper {
     }
   }
 
-  def now: Long = System.currentTimeMillis() / 1000L // in POSIX time
-
+  private def now: Long = System.currentTimeMillis() / 1000L // in POSIX time
   private def error(msg: String)(implicit log: LoggingAdapter): PartialFunction[Any, Throwable] =
     { case (err: Throwable) => log.error(err, msg); err }
-
-  final object Start
 
   def startSingleton(name: String, role: Option[String] = None)(implicit system: ActorSystem): ActorRef =
     system.actorOf(
