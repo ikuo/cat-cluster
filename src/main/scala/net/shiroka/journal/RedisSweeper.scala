@@ -8,7 +8,7 @@ import akka.actor._
 import akka.pattern.ask
 import akka.cluster.sharding._
 import akka.cluster.singleton._
-import akka.persistence.redis.RedisUtils
+import akka.persistence.redis.{ RedisUtils, RedisKeys }
 import akka.persistence.query._
 import akka.persistence.query.journal.redis._
 import akka.stream._
@@ -38,11 +38,7 @@ class RedisSweeper extends Actor with ActorLogging {
     self ! Start
   }
 
-  override def postStop: Unit = try {
-    redis.stop()
-  } finally {
-    super.postStop()
-  }
+  override def postStop: Unit = try redis.stop() finally super.postStop()
 
   def receive = {
     case Start => start
@@ -51,29 +47,46 @@ class RedisSweeper extends Actor with ActorLogging {
   private def start: Unit = {
     import ActorAttributes.supervisionStrategy
     import Supervision.resumingDecider
-    val profiler = context.actorOf(Props(classOf[IterationProfiler]), "iteration-profiler")
+    val profiler = context.actorOf(Props(classOf[IterationProfiler], redis), "iteration-profiler")
 
     readJournal.currentPersistenceIds
-      .mapAsync(parallelism = 5)(id =>
+      .mapAsync(parallelism = 1)(id =>
         (id match {
           case id @ sweepableId(name) =>
             profiler ! id
             regions.getOrElseUpdate(name, ClusterSharding(system).shardRegion(name))
-              .ask(Sweep(id))(2.seconds)
+              .ask(Sweep(id))(2.seconds).mapTo[SweepAck]
+              .map(ack => deleteMetadata(ack.persistenceId))
           case id => Future.failed(new RuntimeException(s"Malformed persistence Id: $id"))
         }).transform(identity, error("Failed to sweep entity"))
       ).withAttributes(supervisionStrategy(resumingDecider))
        .runWith(Sink.ignore)
-       .map(_ => profiler ! 'Finish)
-       .map(_ => system.scheduler.scheduleOnce(5.seconds, self, Start))
-       .onFailure(error("Failed to sweep entities"))
+       .transform(identity, error("Failed to sweep entities"))
+       .onComplete { case _ =>
+         profiler ! 'Finish
+         system.scheduler.scheduleOnce(5.seconds, self, Start)
+       }
   }
+
+  private def deleteMetadata(id: String): Future[_] =
+    if (id.nonEmpty) {
+      import RedisKeys._
+      val tx = redis.transaction()
+      tx.del(highestSequenceNrKey(id))
+      tx.srem(identifiersKey, id)
+      tx.exec()
+    } else Future.successful(())
 }
 
 object RedisSweeper {
-  private class IterationProfiler extends Actor {
+  final object Start
+  private final object Sweeped
+
+  private class IterationProfiler(redis: RedisClient) extends Actor with ActorLogging {
     import java.io._
     import java.text.SimpleDateFormat
+    implicit val logger = log
+    implicit val ec = context.dispatcher
     private[this] var numIds: Long = 0
     private[this] var started: Long = now
     final val filename = "log/profile.sweeper.log"
@@ -92,12 +105,9 @@ object RedisSweeper {
     }
   }
 
-  def now: Long = System.currentTimeMillis() / 1000L // in POSIX time
-
+  private def now: Long = System.currentTimeMillis() / 1000L // in POSIX time
   private def error(msg: String)(implicit log: LoggingAdapter): PartialFunction[Any, Throwable] =
     { case (err: Throwable) => log.error(err, msg); err }
-
-  final object Start
 
   def startSingleton(name: String, role: Option[String] = None)(implicit system: ActorSystem): ActorRef =
     system.actorOf(
