@@ -1,7 +1,9 @@
 package net.shiroka.journal
 
 import scala.concurrent.duration._
+import scala.collection.mutable
 import akka.actor._
+import akka.cluster.sharding._
 import akka.cluster.singleton._
 import akka.persistence.redis.RedisUtils
 import akka.persistence.query._
@@ -10,6 +12,7 @@ import akka.stream._
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import redis.RedisClient
+import net.shiroka._
 
 class RedisSweeper extends Actor with ActorLogging {
   import RedisSweeper._
@@ -17,14 +20,15 @@ class RedisSweeper extends Actor with ActorLogging {
   implicit val system = context.system
   implicit val ec = context.dispatcher
   implicit val materializer = ActorMaterializer()
+  private[this] val regions = mutable.Map.empty[String, ActorRef]
+  val sweepableId = """^(\w+)-.+""".r
 
   val readJournal = PersistenceQuery(system)
     .readJournalFor[ScalaReadJournal]("akka-persistence-redis.read-journal")
-
-  private var redis: RedisClient = _
+  val redis: RedisClient =
+    RedisUtils.create(ConfigFactory.load.getConfig("akka-persistence-redis.journal"))
 
   override def preStart: Unit = {
-    this.redis = RedisUtils.create(ConfigFactory.load.getConfig("akka-persistence-redis.journal"))
     super.preStart()
     self ! Start
   }
@@ -39,16 +43,27 @@ class RedisSweeper extends Actor with ActorLogging {
     case Start => start
   }
 
-  private def start: Unit =
-    readJournal.currentPersistenceIds.runForeach(println).map { result =>
-      println(s"Read all ids with result_: ${result} ############################################################")
-      system.scheduler.scheduleOnce(5.seconds, self, Start)
-    }
+  private def start: Unit = {
+    var numIds: Long = 0
+    readJournal.currentPersistenceIds.runForeach(_ match {
+      case id @ sweepableId(name) =>
+        val region = regions.getOrElseUpdate(name, ClusterSharding(system).shardRegion(name))
+        region ! Sweep(id)
+        numIds += 1
+      case id => log.warning(s"Malformed persistence Id: $id")
+    })
+      .map(_ => system.scheduler.scheduleOnce(5.seconds, self, Start))
+      .onFailure { case err => log.error(err, "Failed to sweep entities") }
+  }
 }
 
 object RedisSweeper {
-  case class Sweep(time: Long)
-  object Start
+  case class Sweep(persistenceId: String, posixTime: Long)
+  object Sweep {
+    def apply(id: String): Sweep = apply(id, System.currentTimeMillis() / 1000L)
+  }
+
+  final object Start
 
   def startSingleton(name: String, role: Option[String] = None)(implicit system: ActorSystem): ActorRef =
     system.actorOf(

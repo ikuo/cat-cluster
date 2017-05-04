@@ -37,7 +37,6 @@ class Sensor(val random: Random = new Random()) extends Actor {
   }
 
   private def stop: Unit = {
-    println(s"stopping ############################################################")
     this.started.foreach(_.cancel)
     this.started = None
   }

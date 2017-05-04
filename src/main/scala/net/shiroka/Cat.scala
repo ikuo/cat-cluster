@@ -6,16 +6,19 @@ import akka.cluster._
 import akka.cluster.sharding._
 import akka.persistence._
 import net.ceedubs.ficus.Ficus._
+import journal.RedisSweeper.Sweep
 
 class Cat extends PersistentActor {
   import Cat._
 
   override val persistenceId: String = self.path.name
 
-  private var numMeow = 0
+  private[this] var numMeow = 0
 
   override def receiveCommand = {
     case msg: Message => persist(msg)(updateState)
+    case Sweep(id, posixTime) if (posixTime > 0) =>
+      println(s"Sweeping ${id}, $posixTime ############################################################")
   }
 
   override def receiveRecover = {
@@ -29,9 +32,9 @@ class Cat extends PersistentActor {
 }
 
 object Cat extends Config {
-  val configKey = "cat"
-  val shardingName = "cat"
-  val shardingRole = "cat"
+  final val configKey = "cat"
+  final val shardingName = "cat"
+  final val shardingRole = "cat"
   val maxEntities = config.as[Int]("max-entities")
   val numberOfShards = config.as[Int]("num-of-shards")
   val rememberEntities = config.as[Boolean]("remember-entities")
@@ -61,6 +64,7 @@ object Cat extends Config {
     new ShardRegion.HashCodeMessageExtractor(numberOfShards) {
       override def entityId(message: Any): String = message match {
         case msg: Message => msg.catId
+        case msg: Sweep => msg.persistenceId
       }
     }
 }
