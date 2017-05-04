@@ -1,5 +1,6 @@
 package net.shiroka.journal
 
+import scala.concurrent.duration._
 import akka.actor._
 import akka.cluster.singleton._
 import akka.persistence.redis.RedisUtils
@@ -14,6 +15,7 @@ class RedisSweeper extends Actor with ActorLogging {
   import RedisSweeper._
 
   implicit val system = context.system
+  implicit val ec = context.dispatcher
   implicit val materializer = ActorMaterializer()
 
   val readJournal = PersistenceQuery(system)
@@ -37,9 +39,11 @@ class RedisSweeper extends Actor with ActorLogging {
     case Start => start
   }
 
-  private def start: Unit = {
-    readJournal.persistenceIds.runForeach(println)
-  }
+  private def start: Unit =
+    readJournal.currentPersistenceIds.runForeach(println).map { result =>
+      println(s"Read all ids with result_: ${result} ############################################################")
+      system.scheduler.scheduleOnce(5.seconds, self, Start)
+    }
 }
 
 object RedisSweeper {

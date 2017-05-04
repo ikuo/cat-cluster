@@ -25,6 +25,7 @@ services:
     environment:
       <<: *environment
       CONFIG: /cat.conf
+      LOGLEVEL: INFO
       MAX_HEAP_SIZE: 300m
       AKKA_HOSTNAME:
 
