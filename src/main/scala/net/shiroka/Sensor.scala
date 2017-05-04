@@ -8,6 +8,7 @@ import akka.cluster._
 import akka.cluster.sharding._
 import akka.cluster.ClusterEvent._
 import net.ceedubs.ficus.Ficus._
+import cat.pb.cat.Meow
 
 class Sensor(val random: Random = new Random()) extends Actor {
   import Sensor._
@@ -24,7 +25,7 @@ class Sensor(val random: Random = new Random()) extends Actor {
 
   def receive = {
     case Sense => (0 until batchSize).foreach(_ =>
-        cat ! Cat.Meow(randomCatId, System.currentTimeMillis() / 1000L))
+        cat ! Meow(randomCatId, System.currentTimeMillis() / 1000L))
     case state: CurrentClusterState =>
       state.members
         .find(member => member.status == MemberStatus.Up && member.address == cluster.selfAddress)

@@ -1,3 +1,5 @@
+import sbt.Keys._
+import sbt._
 import Dependencies._
 import Resolvers._
 
@@ -17,5 +19,6 @@ lazy val root = (project in file(".")).
       ficus,
       specs2 % Test
     ),
-    scalacOptions in Test ++= Seq("-Yrangepos")
+    scalacOptions in Test ++= Seq("-Yrangepos"),
+    PB.targets in Compile := Seq(scalapb.gen() -> (sourceManaged in Compile).value)
   )

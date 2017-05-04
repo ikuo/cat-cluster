@@ -7,6 +7,8 @@ import akka.cluster.sharding._
 import akka.persistence._
 import net.ceedubs.ficus.Ficus._
 import journal.RedisSweeper.Sweep
+import cat.pb.cat._
+import com.trueaccord.scalapb.{ GeneratedMessage => Message }
 
 class Cat extends PersistentActor {
   import Cat._
@@ -40,10 +42,6 @@ object Cat extends Config {
   val numberOfShards = config.as[Int]("num-of-shards")
   val rememberEntities = config.as[Boolean]("remember-entities")
 
-  trait Message { val catId: String }
-  case class Meow(catId: String, posixTime: Long) extends Message
-  case class GetMeows(catId: String) extends Message
-
   def startSharding(implicit system: ActorSystem): Unit = {
     ClusterSharding(system).start(
       typeName = Cat.shardingName,
@@ -64,7 +62,7 @@ object Cat extends Config {
   val messageExtractor =
     new ShardRegion.HashCodeMessageExtractor(numberOfShards) {
       override def entityId(message: Any): String = message match {
-        case msg: Message => msg.catId
+        case msg: Meow => msg.catId
         case msg: Sweep => msg.persistenceId
       }
     }

@@ -1,0 +1,7 @@
+syntax = "proto3";
+package net.shiroka.cat.pb;
+
+message Meow {
+  string cat_id = 1;
+  int64 posix_time = 2;
+}
