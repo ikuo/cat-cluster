@@ -46,8 +46,7 @@ class Profiler extends Actor {
       println(line)
     } else {
       val out = new PrintWriter(new FileOutputStream(new File(filename), true))
-      try { out.println(line) }
-      finally { out.close() }
+      try { out.println(line) } finally { out.close() }
     }
 
     if (used.toDouble / rt.maxMemory > 0.85) {
