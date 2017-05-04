@@ -5,3 +5,8 @@ message Meow {
   string cat_id = 1;
   int64 posix_time = 2;
 }
+
+message State {
+  int64 num_meow = 1;
+  int64 last_event_at = 2;
+}

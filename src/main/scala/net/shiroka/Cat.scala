@@ -12,15 +12,13 @@ import com.trueaccord.scalapb.{ GeneratedMessage => Message }
 
 class Cat extends PersistentActor {
   import Cat._
-
   override val persistenceId: String = self.path.name
-
-  private[this] var numMeow = 0
+  private[this] var state: State = State.defaultInstance
 
   override def receiveCommand = {
     case msg: Message => persist(msg)(updateState)
     case msg @ Sweep(id, posixTime) if (posixTime > 0) =>
-      println(s"Sweeping ${id}, $posixTime ############################################################")
+      println(s"Sweeping $state ############################################################")
       sender ! msg
   }
 
@@ -29,7 +27,9 @@ class Cat extends PersistentActor {
   }
 
   def updateState(msg: Message): Unit = msg match {
-    case msg: Meow => this.numMeow += 1
+    case msg: Meow => this.state = state
+      .update(_.numMeow.modify(_ + 1L))
+      .update(_.lastEventAt := msg.posixTime)
     case _ =>
   }
 }
