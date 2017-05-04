@@ -17,8 +17,9 @@ class Cat extends PersistentActor {
 
   override def receiveCommand = {
     case msg: Message => persist(msg)(updateState)
-    case Sweep(id, posixTime) if (posixTime > 0) =>
+    case msg @ Sweep(id, posixTime) if (posixTime > 0) =>
       println(s"Sweeping ${id}, $posixTime ############################################################")
+      sender ! msg
   }
 
   override def receiveRecover = {

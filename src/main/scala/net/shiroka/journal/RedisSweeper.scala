@@ -1,8 +1,10 @@
 package net.shiroka.journal
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.mutable
 import akka.actor._
+import akka.pattern.ask
 import akka.cluster.sharding._
 import akka.cluster.singleton._
 import akka.persistence.redis.RedisUtils
@@ -45,13 +47,14 @@ class RedisSweeper extends Actor with ActorLogging {
 
   private def start: Unit = {
     var numIds: Long = 0
-    readJournal.currentPersistenceIds.runForeach(_ match {
+    readJournal.currentPersistenceIds.mapAsync(parallelism = 5)(_ match {
       case id @ sweepableId(name) =>
         val region = regions.getOrElseUpdate(name, ClusterSharding(system).shardRegion(name))
-        region ! Sweep(id)
         numIds += 1
-      case id => log.warning(s"Malformed persistence Id: $id")
-    })
+        region.ask(Sweep(id))(2.seconds)
+      case id =>
+        Future.failed(new RuntimeException(s"Malformed persistence Id: $id"))
+    }).runWith(Sink.ignore)
       .map(_ => system.scheduler.scheduleOnce(5.seconds, self, Start))
       .onFailure { case err => log.error(err, "Failed to sweep entities") }
   }
