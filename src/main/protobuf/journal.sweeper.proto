@@ -1,0 +1,10 @@
+syntax = "proto3";
+package net.shiroka.cat.pb;
+
+message Sweep {
+  string persistenceId = 1;
+}
+
+message SweepAck {
+  string persistenceId = 1;
+}

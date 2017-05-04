@@ -1,25 +1,28 @@
 package net.shiroka
 
 import java.util.Optional
+import scala.concurrent.duration._
 import akka.actor._
 import akka.cluster._
 import akka.cluster.sharding._
 import akka.persistence._
 import net.ceedubs.ficus.Ficus._
-import journal.RedisSweeper.Sweep
 import cat.pb.cat._
+import cat.pb.journal.sweeper._
 import com.trueaccord.scalapb.{ GeneratedMessage => Message }
 
 class Cat extends PersistentActor {
   import Cat._
   override val persistenceId: String = self.path.name
-  private[this] var state: State = State.defaultInstance
+  private[this] var state = StateOps(State.defaultInstance)
 
   override def receiveCommand = {
+    case msg @ Sweep(id) =>
+      val ack =
+        if (state.isExpired) { SweepAck(id) }
+        else { SweepAck("") }
+      sender ! ack
     case msg: Message => persist(msg)(updateState)
-    case msg @ Sweep(id, posixTime) if (posixTime > 0) =>
-      println(s"Sweeping $state ############################################################")
-      sender ! msg
   }
 
   override def receiveRecover = {
@@ -27,7 +30,7 @@ class Cat extends PersistentActor {
   }
 
   def updateState(msg: Message): Unit = msg match {
-    case msg: Meow => this.state = state
+    case msg: Meow => this.state = state.raw
       .update(_.numMeow.modify(_ + 1L))
       .update(_.lastEventAt := msg.posixTime)
     case _ =>
@@ -40,9 +43,15 @@ object Cat extends Config {
   final val shardingRole = "cat"
   val maxEntities = config.as[Int]("max-entities")
   val numberOfShards = config.as[Int]("num-of-shards")
+  val timeToExpire = config.as[FiniteDuration]("time-to-expire").toSeconds
   val rememberEntities = config.as[Boolean]("remember-entities")
 
-  def startSharding(implicit system: ActorSystem): Unit = {
+  implicit class StateOps(val raw: State) {
+    def isExpired = (now - raw.lastEventAt) > timeToExpire
+    def now = System.currentTimeMillis / 1000L
+  }
+
+  def startSharding(implicit system: ActorSystem): Unit =
     ClusterSharding(system).start(
       typeName = Cat.shardingName,
       entityProps = Props(classOf[Cat]),
@@ -50,14 +59,12 @@ object Cat extends Config {
         .withRole(shardingRole)
         .withRememberEntities(rememberEntities),
       messageExtractor = messageExtractor)
-  }
 
-  def startProxy(implicit system: ActorSystem): Unit = {
+  def startProxy(implicit system: ActorSystem): Unit =
     ClusterSharding(system).startProxy(
       typeName = Cat.shardingName,
       role = Optional.of(shardingRole),
       messageExtractor = messageExtractor)
-  }
 
   val messageExtractor =
     new ShardRegion.HashCodeMessageExtractor(numberOfShards) {

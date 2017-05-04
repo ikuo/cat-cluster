@@ -16,6 +16,7 @@ import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import redis.RedisClient
 import net.shiroka._
+import cat.pb.journal.sweeper._
 
 class RedisSweeper extends Actor with ActorLogging {
   import RedisSweeper._
@@ -95,11 +96,6 @@ object RedisSweeper {
 
   private def error(msg: String)(implicit log: LoggingAdapter): PartialFunction[Any, Throwable] =
     { case (err: Throwable) => log.error(err, msg); err }
-
-  case class Sweep(persistenceId: String, posixTime: Long)
-  object Sweep {
-    def apply(id: String): Sweep = apply(id, now)
-  }
 
   final object Start
 
