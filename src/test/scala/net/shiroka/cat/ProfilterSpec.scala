@@ -5,9 +5,11 @@ import akka.testkit._
 import akka.cluster.sharding._
 import org.specs2.mutable._
 import org.specs2.specification.AfterAll
+import com.typesafe.config.ConfigFactory
 import ShardRegion._
+import ProfilerSpec._
 
-class ProfilerSpec extends TestKit(ActorSystem("profiler-spec"))
+class ProfilerSpec extends TestKit(ActorSystem("profiler-spec", testConf))
     with ImplicitSender with SpecificationLike with AfterAll {
   import Profiler._
 
@@ -27,4 +29,17 @@ class ProfilerSpec extends TestKit(ActorSystem("profiler-spec"))
       }
     }
   }
+}
+
+object ProfilerSpec {
+  val testConf = ConfigFactory.load.withFallback(ConfigFactory.parseString("""
+akka {
+  loggers = ["akka.testkit.TestEventListener"]
+  loglevel = "WARNING"
+  stdout-loglevel = "WARNING"
+  persistence {
+    journal.plugin = "akka-persistence-redis.journal"
+  }
+}
+"""))
 }

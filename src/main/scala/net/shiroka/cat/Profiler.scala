@@ -45,6 +45,7 @@ class Profiler extends Actor {
       now,
       hostName,
       if (Cat.rememberEntities) 1 else 0,
+      memString(redis.getOrElse("used_memory", "0").toLong),
       numEntities,
       memString(used),
       memString(rt.totalMemory),
