@@ -50,6 +50,7 @@ class RedisSweeper extends Actor with ActorLogging {
   private def start: Unit = {
     import ActorAttributes.supervisionStrategy
     import Supervision.resumingDecider
+    import net.shiroka.cat.syntax.TapFailure
     val profiler = context.actorOf(Props(classOf[IterationProfiler], redis), "iteration-profiler")
 
     readJournal.currentPersistenceIds
@@ -61,11 +62,11 @@ class RedisSweeper extends Actor with ActorLogging {
               .ask(Sweep(id))(timeout.sweepAck).mapTo[SweepAck]
               .flatMap(deleteMetadata)
               .map(_.foreach(_ => profiler ! 'Sweeped))
-          case id => Future.failed(new RuntimeException(s"Malformed persistence Id: $id"))
-        }).transform(identity, error("Failed to sweep entity")))
+          case id => sys.error(s"Malformed persistence Id: $id")
+        }).tapFailure(profiler ! _))
       .withAttributes(supervisionStrategy(resumingDecider))
       .runWith(Sink.ignore)
-      .transform(identity, error("Failed to sweep entities"))
+      .tapFailure(log.error("Failed to sweep entities", _))
       .onComplete {
         case _ =>
           profiler ! 'Finish
@@ -89,6 +90,7 @@ object RedisSweeper extends Config {
   val stdout = config.as[Boolean]("stdout")
   val parallelism = config.as[Int]("parallelism")
   val intermission = config.as[FiniteDuration]("intermission")
+  val warningTolerance = config.as[Double]("warning-tolerance")
   val timeout = Timeout(config.getConfig("timeout"))
   final object Start
   private final object Sweeped
@@ -103,6 +105,7 @@ object RedisSweeper extends Config {
     import java.text.SimpleDateFormat
     implicit val logger = log
     implicit val ec = context.dispatcher
+    private[this] var numErrors: Long = 0
     private[this] var numSweepables: Long = 0
     private[this] var numSweeped: Long = 0
     private[this] var started: Long = now
@@ -112,10 +115,13 @@ object RedisSweeper extends Config {
     def receive = {
       case 'Sweepable => numSweepables += 1
       case 'Sweeped => numSweeped += 1
+      case err: Throwable =>
+        numErrors += 1
+        if (tooManyErrors_?) log.warning("Failed to sweep entity. {}", err.getMessage)
       case 'Finish => finish
     }
 
-    def finish: Unit = {
+    private def finish: Unit = {
       val line = Seq(timestamp, sys.env("AKKA_HOSTNAME"), numSweepables, numSweeped, (now - started))
         .mkString("\t")
       if (stdout) { println(line) }
@@ -125,11 +131,11 @@ object RedisSweeper extends Config {
       }
       self ! PoisonPill
     }
+
+    private def tooManyErrors_? = (numSweepables > 0 && (numErrors / numSweepables.toDouble) > warningTolerance)
   }
 
   private def now: Long = System.currentTimeMillis() / 1000L // in POSIX time
-  private def error(msg: String)(implicit log: LoggingAdapter): PartialFunction[Any, Throwable] =
-    { case (err: Throwable) => log.error(err, msg); err }
 
   def startSingleton(name: String, role: Option[String] = None)(implicit system: ActorSystem): ActorRef =
     system.actorOf(
