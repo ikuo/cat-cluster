@@ -18,7 +18,7 @@ datasrc.files <- function(dir) {
 datasrc.load.one <-function(file) {
   fread(
     file,
-    col.names = c('time', 'member', 'num.entities', 'mem.used', 'mem.total', 'mem.free', 'mem.max')
+    col.names = c('time', 'member', 'num.entities', 'mem.used.redis', 'mem.used', 'mem.total', 'mem.free', 'mem.max')
   ) %>%
     mutate(
       time = parse_date_time2(time, "%Y-%m-%d %H:%M:%S"),
