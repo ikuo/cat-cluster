@@ -32,13 +32,16 @@ cat.bases <- function(df, start = NULL, end = NULL) {
 }
 
 cat.overview <- function(df = NULL, df.bases = NULL) {
-  #g <- ggplot(df, aes(x = num.entities, y = mem.used.redis, color = member)) + geom_point() + geom_line()
-  #g <- ggplot(df, aes(x = time, y = mem.used, color = member)) + geom_point() + geom_line()
-  #g <- ggplot(df, aes(x = num.entities, y = mem.used, color = member)) + geom_point()
-  #g <- ggplot(df, aes(x = time, y = num.entities, color = member)) + geom_point()
-  #g <- ggplot(df_, aes(x = time, y = mem.used, color = member)) + geom_point()
-  g <- ggplot(df.bases, aes(x = base_time, y = mem.used)) + geom_point()
-  #g <- ggplot(df, aes(x = base_time, y = n)) + geom_point()
-  #g <- ggplot(df, aes(x = num.entities, y = mem.used)) + geom_point()
-  plot(g)
+  plots <- list(
+    ggplot(df, aes(x = time, y = mem.used, color = member)) + geom_point() + geom_line(),
+    ggplot(df, aes(x = time, y = num.entities, color = member)) + geom_point(),
+    ggplot(df, aes(x = num.entities, y = mem.used, color = member)) + geom_point(),
+    ggplot(df, aes(x = num.entities, y = mem.used.redis, color = member)) + geom_point(),
+
+    ggplot(df.bases, aes(x = base_time, y = n)) + geom_point(),
+    ggplot(df.bases, aes(x = base_time, y = mem.used)) + geom_point(),
+    ggplot(df.bases, aes(x = num.entities, y = mem.used)) + geom_point()
+  )
+
+  Rmisc::multiplot(plotlist = plots, cols = 2)
 }

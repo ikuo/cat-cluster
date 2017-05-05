@@ -1,6 +1,7 @@
 target/
 log/*.*
 *.feather
+.Rhistory
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
