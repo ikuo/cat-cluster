@@ -14,18 +14,14 @@ services:
       CONFIG: /seed.conf
       SEED_ADDR: akka.tcp://cluster@seed:2551
       AKKA_HOSTNAME: seed
-      CATS_MAX: 120e+6
       REDIS_HOST: redis
-      CAT_REMEMBER_ENTITIES: 'false'
-      PROFILER_STDOUT: 'true'
 
   cat:
     image: ikuo/cat-cluster:latest
     restart: always
     environment:
       <<: *environment
-      CONFIG: /cat.conf
-      LOGLEVEL: INFO
+      CONFIG: /cat-dev.conf
       MAX_HEAP_SIZE: 300m
       AKKA_HOSTNAME:
 
@@ -34,8 +30,6 @@ services:
     restart: always
     environment:
       <<: *environment
-      CONFIG: /sensor.conf
-      SENSOR_INTERVAL: 300.millis
-      SENSOR_BATCH_SIZE: 100
+      CONFIG: /sensor-dev.conf
       MAX_HEAP_SIZE: 30m
       AKKA_HOSTNAME:

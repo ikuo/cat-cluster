@@ -22,5 +22,6 @@ lazy val root = (project in file(".")).
     ),
     scalacOptions in Test ++= Seq("-Yrangepos"),
     fork in Test := true,
+    test in assembly := {},
     PB.targets in Compile := Seq(scalapb.gen() -> (sourceManaged in Compile).value)
   )

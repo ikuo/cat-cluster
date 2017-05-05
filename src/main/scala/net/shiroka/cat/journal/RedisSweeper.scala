@@ -13,9 +13,10 @@ import akka.persistence.query._
 import akka.persistence.query.journal.redis._
 import akka.stream._
 import akka.stream.scaladsl._
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ ConfigFactory, Config => TSConfig }
 import redis.RedisClient
 import redis.protocol.MultiBulk
+import net.ceedubs.ficus.Ficus._
 import net.shiroka.cat.Config
 import net.shiroka.cat.pb.journal.sweeper._
 
@@ -57,7 +58,7 @@ class RedisSweeper extends Actor with ActorLogging {
           case id @ sweepableId(name) =>
             profiler ! 'Sweepable
             regions.getOrElseUpdate(name, ClusterSharding(system).shardRegion(name))
-              .ask(Sweep(id))(2.seconds).mapTo[SweepAck]
+              .ask(Sweep(id))(timeout.sweepAck).mapTo[SweepAck]
               .flatMap(deleteMetadata)
               .map(_.foreach(_ => profiler ! 'Sweeped))
           case id => Future.failed(new RuntimeException(s"Malformed persistence Id: $id"))
@@ -67,11 +68,11 @@ class RedisSweeper extends Actor with ActorLogging {
       .onComplete {
         case _ =>
           profiler ! 'Finish
-          system.scheduler.scheduleOnce(5.seconds, self, Start)
+          system.scheduler.scheduleOnce(intermission, self, Start)
       }
   }
 
-  private def deleteMetadata(ack: SweepAck) = self.ask(ack)(2.seconds).mapTo[Option[_]]
+  private def deleteMetadata(ack: SweepAck) = self.ask(ack)(timeout.deleteMetadata).mapTo[Option[_]]
   private def deleteMetadata(id: String): Future[Option[_]] =
     if (id.nonEmpty) {
       import RedisKeys._
@@ -84,9 +85,17 @@ class RedisSweeper extends Actor with ActorLogging {
 
 object RedisSweeper extends Config {
   val configKey = "journal.redis-sweeper"
-  val stdout = config.getBoolean("stdout")
+  val stdout = config.as[Boolean]("stdout")
+  val parallelism = config.as[Int]("parallelism")
+  val intermission = config.as[FiniteDuration]("intermission")
+  val timeout = Timeout(config.getConfig("timeout"))
   final object Start
   private final object Sweeped
+
+  case class Timeout(config: TSConfig) {
+    val sweepAck = config.as[FiniteDuration]("sweep-ack")
+    val deleteMetadata = config.as[FiniteDuration]("delete-metadata")
+  }
 
   private class IterationProfiler(redis: RedisClient) extends Actor with ActorLogging {
     import java.io._
