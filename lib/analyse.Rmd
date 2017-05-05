@@ -18,18 +18,6 @@ source('sweeper.R')
 df.cat <- cat.load(params$directory)
 df.cat.bases <- cat.bases(df.cat)
 df.sweeper <- sweeper.load(params$directory)
-```
 
-```{r}
-df_ <- df.cat.bases
-#g <- ggplot(df, aes(x = num.entities, y = mem.used.redis, color = member)) + geom_point() + geom_line()
-#g <- ggplot(df, aes(x = time, y = mem.used, color = member)) + geom_point() + geom_line()
-#g <- ggplot(df, aes(x = num.entities, y = mem.used, color = member)) + geom_point()
-#g <- ggplot(df, aes(x = time, y = num.entities, color = member)) + geom_point()
-#g <- ggplot(df_, aes(x = time, y = mem.used, color = member)) + geom_point()
-g <- ggplot(df_, aes(x = base_time, y = mem.used)) + geom_point()
-#g <- ggplot(df_, aes(x = base_time, y = n)) + geom_point()
-#g <- ggplot(df_, aes(x = num.entities, y = mem.used)) + geom_point()
-plot(g)
-summary(df_)
+cat.overview(df.cat, df.cat.bases)
 ```

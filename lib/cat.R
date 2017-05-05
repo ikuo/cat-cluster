@@ -2,7 +2,7 @@ cat.files <- function(dir) {
   list.files(dir, pattern = "catcluster.*.profile.log", recursive = TRUE, full.names = TRUE)
 }
 
-cat.load.one <-function(file) {
+cat.load.one <- function(file) {
   fread(
     file,
     col.names = c('time', 'member', 'remember.entities', 'num.entities', 'mem.used.redis', 'mem.used', 'mem.total', 'mem.free', 'mem.max')
@@ -29,4 +29,16 @@ cat.bases <- function(df, start = NULL, end = NULL) {
       mem.used = sum(mem.used)
     ) %>%
     filter(n - lag(n, order_by = base_time) >= 0)
+}
+
+cat.overview <- function(df = NULL, df.bases = NULL) {
+  #g <- ggplot(df, aes(x = num.entities, y = mem.used.redis, color = member)) + geom_point() + geom_line()
+  #g <- ggplot(df, aes(x = time, y = mem.used, color = member)) + geom_point() + geom_line()
+  #g <- ggplot(df, aes(x = num.entities, y = mem.used, color = member)) + geom_point()
+  #g <- ggplot(df, aes(x = time, y = num.entities, color = member)) + geom_point()
+  #g <- ggplot(df_, aes(x = time, y = mem.used, color = member)) + geom_point()
+  g <- ggplot(df.bases, aes(x = base_time, y = mem.used)) + geom_point()
+  #g <- ggplot(df, aes(x = base_time, y = n)) + geom_point()
+  #g <- ggplot(df, aes(x = num.entities, y = mem.used)) + geom_point()
+  plot(g)
 }
