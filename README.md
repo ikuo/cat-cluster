@@ -13,13 +13,13 @@ sbt> re-start
 2) single container:
 
 ```
-sudo docker run -it --env "CONFIG=/application.conf" --env "AKKA_HOSTNAME=127.0.0.1" ikuo/cat-cluster
+sudo docker run -it --env "CONFIG=/seed.conf" --env "AKKA_HOSTNAME=127.0.0.1" ikuo/cat-cluster
 ```
 
 3) Local cluster:
 
 ```
-sudo docker-compose up
+docker build -t $USER/cat-cluster . && ENV=dev docker-compose up
 ```
 
 ## Deploying

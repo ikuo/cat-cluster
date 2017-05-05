@@ -7,7 +7,7 @@ services:
       - "6379"
 
   seed: &seed
-    image: ikuo/cat-cluster:latest
+    image: ${USER}/cat-cluster:latest
     ports: ["8081:8080", "2551:2551"]
     restart: always
     environment: &environment
@@ -17,19 +17,19 @@ services:
       REDIS_HOST: redis
 
   cat:
-    image: ikuo/cat-cluster:latest
+    image: ${USER}/cat-cluster:latest
     restart: always
     environment:
       <<: *environment
-      CONFIG: /cat-dev.conf
+      CONFIG: /cat-${ENV}.conf
       MAX_HEAP_SIZE: 300m
       AKKA_HOSTNAME:
 
   sensor:
-    image: ikuo/cat-cluster:latest
+    image: ${USER}/cat-cluster:latest
     restart: always
     environment:
       <<: *environment
-      CONFIG: /sensor-dev.conf
+      CONFIG: /sensor-${ENV}.conf
       MAX_HEAP_SIZE: 30m
       AKKA_HOSTNAME:
