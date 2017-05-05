@@ -28,7 +28,10 @@ cat.bases <- function(df, start = NULL, end = NULL) {
       num.entities = mean(num.entities),
       mem.used = sum(mem.used)
     ) %>%
-    filter(n - lag(n, order_by = base_time) >= 0)
+    filter(
+      n >= lag(n, order_by = base_time),
+      n <= lag(n, order_by = base_time) * 1.5
+    )
 }
 
 cat.overview <- function(df = NULL, df.bases = NULL) {
