@@ -17,6 +17,7 @@ lazy val root = (project in file(".")).
       akka("cluster-sharding"),
       akkaRedis,
       ficus,
+      akka("testkit") % Test,
       specs2 % Test
     ),
     scalacOptions in Test ++= Seq("-Yrangepos"),

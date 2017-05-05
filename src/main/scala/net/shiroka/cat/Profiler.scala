@@ -19,7 +19,7 @@ class Profiler extends Actor {
 
   implicit val system = context.system
   val df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z")
-  val hostName = sys.env("AKKA_HOSTNAME")
+  val hostName = sys.env.getOrElse("AKKA_HOSTNAME", "unknown")
   lazy val region = ClusterSharding(context.system).shardRegion(Cat.shardingName)
   implicit val ec: ExecutionContext = context.dispatcher
   val redis: RedisClient =
@@ -28,15 +28,17 @@ class Profiler extends Actor {
 
   def receive = {
     case stats: Stats => emit(stats)
-    case ClusterShardingStats(stats) =>
+    case stats: ClusterShardingStats =>
       redis.info("memory").map(r => emitter.getOrElse(self) ! Stats(stats, r))
     case Start =>
       system.scheduler.schedule(2.seconds, interval, region, GetClusterShardingStats(20.seconds))
+    case Emitter(ref) => this.emitter = ref
   }
 
   def emit(stats: Stats): Unit = {
     val rt = Runtime.getRuntime
-    val numEntities = stats.sharding.values.map(_.stats.values.sum).sum
+    val Stats(ClusterShardingStats(sharding), redis) = stats
+    val numEntities = sharding.values.map(_.stats.values.sum).sum
     val used = rt.totalMemory - rt.freeMemory
 
     val line = Seq(
@@ -76,10 +78,18 @@ object Profiler extends Config {
 
   object Start
 
-  case class Stats(sharding: Stats.Sharding, redis: String)
+  case class Stats(sharding: ClusterShardingStats, redis: Map[String, String])
   object Stats {
-    type Sharding = Map[Address, ShardRegionStats]
+    def apply(sharding: ClusterShardingStats, redis: String): Stats = {
+      val entries = for {
+        line <- redis.lines if (line.nonEmpty && line.head != '#')
+        key :: value :: _ = line.split(":").toList
+      } yield (key -> value)
+      apply(sharding, Map(entries.toSeq: _*))
+    }
   }
+
+  case class Emitter(ref: Option[ActorRef])
 
   def run(system: ActorSystem): Unit = {
     system.actorOf(props) ! Start
