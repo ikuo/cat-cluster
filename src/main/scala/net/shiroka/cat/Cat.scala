@@ -23,6 +23,7 @@ class Cat extends PersistentActor with ActorLogging {
         this.sweeperToAck = Some(sender)
         context.parent ! ShardRegion.Passivate(stopMessage = RespondToSweep)
       } else { sender ! SweepAck("") }
+
     case msg: Message => persist(msg)(updateState)
 
     case RespondToSweep => deleteMessages(lastSequenceNr)
@@ -71,13 +72,15 @@ object Cat extends Config {
       settings = ClusterShardingSettings(system)
         .withRole(shardingRole)
         .withRememberEntities(rememberEntities),
-      messageExtractor = messageExtractor)
+      messageExtractor = messageExtractor
+    )
 
   def startProxy(implicit system: ActorSystem): Unit =
     ClusterSharding(system).startProxy(
       typeName = Cat.shardingName,
       role = Optional.of(shardingRole),
-      messageExtractor = messageExtractor)
+      messageExtractor = messageExtractor
+    )
 
   val messageExtractor =
     new ShardRegion.HashCodeMessageExtractor(numberOfShards) {

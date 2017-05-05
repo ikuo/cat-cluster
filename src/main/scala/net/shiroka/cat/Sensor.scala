@@ -25,7 +25,7 @@ class Sensor(val random: Random = new Random()) extends Actor {
 
   def receive = {
     case Sense => (0 until batchSize).foreach(_ =>
-        cat ! Meow(randomCatId, System.currentTimeMillis() / 1000L))
+      cat ! Meow(randomCatId, System.currentTimeMillis() / 1000L))
     case state: CurrentClusterState =>
       state.members
         .find(member => member.status == MemberStatus.Up && member.address == cluster.selfAddress)
@@ -48,7 +48,7 @@ class Sensor(val random: Random = new Random()) extends Actor {
       this.started = Some(system.scheduler.schedule(2.seconds, interval, self, Sense))
     }
 
-  private def randomCatId: String = s"cat-${ random.nextInt(Cat.maxEntities) }"
+  private def randomCatId: String = s"cat-${random.nextInt(Cat.maxEntities)}"
 }
 
 object Sensor extends Config {

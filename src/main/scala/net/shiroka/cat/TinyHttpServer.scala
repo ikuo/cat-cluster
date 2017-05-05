@@ -1,6 +1,6 @@
 package net.shiroka.cat
 import java.net.InetSocketAddress
-import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
+import com.sun.net.httpserver.{ HttpExchange, HttpHandler, HttpServer }
 
 object TinyHttpServer {
   def serve(port: Int): Unit = {

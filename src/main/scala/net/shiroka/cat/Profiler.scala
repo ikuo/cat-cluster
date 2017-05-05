@@ -24,11 +24,12 @@ class Profiler extends Actor {
   implicit val ec: ExecutionContext = context.dispatcher
   val redis: RedisClient =
     RedisUtils.create(ConfigFactory.load.getConfig("akka-persistence-redis.journal"))
+  var emitter: Option[ActorRef] = None
 
   def receive = {
     case stats: Stats => emit(stats)
     case ClusterShardingStats(stats) =>
-      redis.info("memory").map(r => self ! Stats(stats, r))
+      redis.info("memory").map(r => emitter.getOrElse(self) ! Stats(stats, r))
     case Start =>
       system.scheduler.schedule(2.seconds, interval, region, GetClusterShardingStats(20.seconds))
   }

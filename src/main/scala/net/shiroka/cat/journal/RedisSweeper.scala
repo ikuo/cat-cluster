@@ -58,14 +58,14 @@ class RedisSweeper extends Actor with ActorLogging {
               .ask(Sweep(id))(2.seconds).mapTo[SweepAck]
               .map(ack => deleteMetadata(ack.persistenceId))
           case id => Future.failed(new RuntimeException(s"Malformed persistence Id: $id"))
-        }).transform(identity, error("Failed to sweep entity"))
-      ).withAttributes(supervisionStrategy(resumingDecider))
-       .runWith(Sink.ignore)
-       .transform(identity, error("Failed to sweep entities"))
-       .onComplete { case _ =>
-         profiler ! 'Finish
-         system.scheduler.scheduleOnce(5.seconds, self, Start)
-       }
+        }).transform(identity, error("Failed to sweep entity"))).withAttributes(supervisionStrategy(resumingDecider))
+      .runWith(Sink.ignore)
+      .transform(identity, error("Failed to sweep entities"))
+      .onComplete {
+        case _ =>
+          profiler ! 'Finish
+          system.scheduler.scheduleOnce(5.seconds, self, Start)
+      }
   }
 
   private def deleteMetadata(id: String): Future[_] =
