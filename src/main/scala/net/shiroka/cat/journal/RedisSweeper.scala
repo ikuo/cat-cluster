@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import scala.collection.mutable
 import akka.event.LoggingAdapter
 import akka.actor._
-import akka.pattern.ask
+import akka.pattern.{ ask, pipe }
 import akka.cluster.sharding._
 import akka.cluster.singleton._
 import akka.persistence.redis.{ RedisUtils, RedisKeys }
@@ -42,6 +42,7 @@ class RedisSweeper extends Actor with ActorLogging {
 
   def receive = {
     case Start => start
+    case SweepAck(id) => deleteMetadata_(id).pipeTo(sender)
   }
 
   private def start: Unit = {
@@ -50,13 +51,13 @@ class RedisSweeper extends Actor with ActorLogging {
     val profiler = context.actorOf(Props(classOf[IterationProfiler], redis), "iteration-profiler")
 
     readJournal.currentPersistenceIds
-      .mapAsync(parallelism = 1)(id =>
+      .mapAsyncUnordered(parallelism = 20)(id =>
         (id match {
           case id @ sweepableId(name) =>
             profiler ! id
             regions.getOrElseUpdate(name, ClusterSharding(system).shardRegion(name))
               .ask(Sweep(id))(2.seconds).mapTo[SweepAck]
-              .map(ack => deleteMetadata(ack.persistenceId))
+              .flatMap(ack => deleteMetadata(ack.persistenceId))
           case id => Future.failed(new RuntimeException(s"Malformed persistence Id: $id"))
         }).transform(identity, error("Failed to sweep entity"))).withAttributes(supervisionStrategy(resumingDecider))
       .runWith(Sink.ignore)
@@ -68,7 +69,8 @@ class RedisSweeper extends Actor with ActorLogging {
       }
   }
 
-  private def deleteMetadata(id: String): Future[_] =
+  private def deleteMetadata(id: String): Future[_] = self.ask(SweepAck(id))(2.seconds)
+  private def deleteMetadata_(id: String): Future[_] =
     if (id.nonEmpty) {
       import RedisKeys._
       val tx = redis.transaction()
