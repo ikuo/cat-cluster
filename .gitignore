@@ -1,5 +1,6 @@
 target/
 log/*.*
+*.feather
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
