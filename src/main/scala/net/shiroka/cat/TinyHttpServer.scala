@@ -1,4 +1,4 @@
-package net.shiroka
+package net.shiroka.cat
 import java.net.InetSocketAddress
 import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
 

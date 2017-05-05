@@ -1,4 +1,4 @@
-package net.shiroka.journal
+package net.shiroka.cat.journal
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

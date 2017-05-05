@@ -1,4 +1,4 @@
-package net.shiroka
+package net.shiroka.cat
 
 import java.util.Random
 import scala.concurrent.duration._
@@ -8,7 +8,7 @@ import akka.cluster._
 import akka.cluster.sharding._
 import akka.cluster.ClusterEvent._
 import net.ceedubs.ficus.Ficus._
-import cat.pb.cat.Meow
+import pb.cat.Meow
 
 class Sensor(val random: Random = new Random()) extends Actor {
   import Sensor._

@@ -1,4 +1,4 @@
-package net.shiroka
+package net.shiroka.cat
 
 import java.util.Optional
 import scala.concurrent.duration._
@@ -7,8 +7,8 @@ import akka.cluster._
 import akka.cluster.sharding._
 import akka.persistence._
 import net.ceedubs.ficus.Ficus._
-import cat.pb.cat._
-import cat.pb.journal.sweeper._
+import pb.cat._
+import pb.journal.sweeper._
 import com.trueaccord.scalapb.{ GeneratedMessage => Message }
 
 class Cat extends PersistentActor with ActorLogging {

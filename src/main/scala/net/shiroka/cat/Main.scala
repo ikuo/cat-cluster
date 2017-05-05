@@ -1,4 +1,4 @@
-package net.shiroka
+package net.shiroka.cat
 import java.util.Random
 import scala.collection.JavaConverters._
 import akka.actor._

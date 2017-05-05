@@ -1,4 +1,4 @@
-package net.shiroka
+package net.shiroka.cat
 
 import akka.actor._
 import akka.cluster._
@@ -8,27 +8,34 @@ import scala.concurrent.ExecutionContext
 import java.io._
 import java.util.Date
 import java.text.SimpleDateFormat
+import akka.persistence.redis.{ RedisUtils, RedisKeys }
+import com.typesafe.config.ConfigFactory
+import redis.RedisClient
 import net.ceedubs.ficus.Ficus._
 import ShardRegion._
 
 class Profiler extends Actor {
   import Profiler._
 
-  val system = context.system
+  implicit val system = context.system
   val df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z")
   val hostName = sys.env("AKKA_HOSTNAME")
   lazy val region = ClusterSharding(context.system).shardRegion(Cat.shardingName)
   implicit val ec: ExecutionContext = context.dispatcher
+  val redis: RedisClient =
+    RedisUtils.create(ConfigFactory.load.getConfig("akka-persistence-redis.journal"))
 
   def receive = {
-    case ClusterShardingStats(stats) => profile(stats)
+    case stats: Stats => emit(stats)
+    case ClusterShardingStats(stats) =>
+      redis.info("memory").map(r => self ! Stats(stats, r))
     case Start =>
-        system.scheduler.schedule(2.seconds, interval, region, GetClusterShardingStats(20.seconds))
+      system.scheduler.schedule(2.seconds, interval, region, GetClusterShardingStats(20.seconds))
   }
 
-  def profile(stats: Map[Address, ShardRegionStats]): Unit = {
+  def emit(stats: Stats): Unit = {
     val rt = Runtime.getRuntime
-    val numEntities = stats.values.map(_.stats.values.sum).sum
+    val numEntities = stats.sharding.values.map(_.stats.values.sum).sum
     val used = rt.totalMemory - rt.freeMemory
 
     val line = Seq(
@@ -67,6 +74,11 @@ object Profiler extends Config {
   val filename = "log/profile.log"
 
   object Start
+
+  case class Stats(sharding: Stats.Sharding, redis: String)
+  object Stats {
+    type Sharding = Map[Address, ShardRegionStats]
+  }
 
   def run(system: ActorSystem): Unit = {
     system.actorOf(props) ! Start
