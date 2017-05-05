@@ -9,17 +9,18 @@ library(dplyr)
 library(lubridate)
 library(ggplot2)
 library(feather)
+library(data.table)
 ```
 
 ```{r load data}
 datasrc.files <- function(dir) {
-  list.files(dir, pattern = "catcluster.*.log", recursive = TRUE, full.names = TRUE)
+  list.files(dir, pattern = "catcluster.*.profile.log", recursive = TRUE, full.names = TRUE)
 }
 
 datasrc.load.one <-function(file) {
   fread(
     file,
-    col.names = c('time', 'member', 'num.entities', 'mem.used.redis', 'mem.used', 'mem.total', 'mem.free', 'mem.max')
+    col.names = c('time', 'member', 'remember.entities', 'num.entities', 'mem.used.redis', 'mem.used', 'mem.total', 'mem.free', 'mem.max')
   ) %>%
     mutate(
       time = parse_date_time2(time, "%Y-%m-%d %H:%M:%S"),
@@ -48,11 +49,12 @@ df_ <- df %>% filter(
     mem.used = sum(mem.used)
   ) %>%
   filter(n - lag(n, order_by = base_time) >= 0)
+g <- ggplot(df, aes(x = time, y = mem.used, color = member)) + geom_point()
 #g <- ggplot(df, aes(x = num.entities, y = mem.used, color = member)) + geom_point()
 #g <- ggplot(df, aes(x = time, y = num.entities, color = member)) + geom_point()
 #g <- ggplot(df_, aes(x = time, y = mem.used, color = member)) + geom_point()
 #g <- ggplot(df_, aes(x = base_time, y = mem.used)) + geom_point()
-g <- ggplot(df_, aes(x = base_time, y = n)) + geom_point()
+#g <- ggplot(df_, aes(x = base_time, y = n)) + geom_point()
 #g <- ggplot(df_, aes(x = num.entities, y = mem.used)) + geom_point()
 plot(g)
 summary(df_)
