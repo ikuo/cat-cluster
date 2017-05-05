@@ -1,11 +1,11 @@
-datasrc.cat.files <- function(dir) {
-  list.files(dir, pattern = "catcluster.*.profile.log", recursive = TRUE, full.names = TRUE)
+datasrc.sweeper.files <- function(dir) {
+  list.files(dir, pattern = "catcluster.*.profile.sweeper.log", recursive = TRUE, full.names = TRUE)
 }
 
-datasrc.cat.load.one <-function(file) {
+datasrc.sweeper.load.one <-function(file) {
   fread(
     file,
-    col.names = c('time', 'member', 'remember.entities', 'num.entities', 'mem.used.redis', 'mem.used', 'mem.total', 'mem.free', 'mem.max')
+    col.names = c('time', 'member', 'sweepables', 'sweeped', 'elapsed.sec')
   ) %>%
     mutate(
       time = parse_date_time2(time, "%Y-%m-%d %H:%M:%S"),
@@ -13,6 +13,6 @@ datasrc.cat.load.one <-function(file) {
     )
 }
 
-datasrc.cat.load <- function(dir) {
-  rbindlist(lapply(datasrc.cat.files(dir), datasrc.cat.load.one))
+datasrc.sweeper.load <- function(dir) {
+  rbindlist(lapply(datasrc.sweeper.files(dir), datasrc.sweeper.load.one))
 }

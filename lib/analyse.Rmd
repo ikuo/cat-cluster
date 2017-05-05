@@ -14,7 +14,9 @@ library(data.table)
 
 ```{r load data}
 source('datasrc.cat.R')
-df <- datasrc.cat.load(params$directory)
+source('datasrc.sweeper.R')
+df.cat <- datasrc.cat.load(params$directory)
+df.sweeper <- datasrc.sweeper.load(params$directory)
 ```
 
 ```{r}
