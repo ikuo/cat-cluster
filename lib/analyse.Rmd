@@ -8,6 +8,7 @@ params:
 library(dplyr)
 library(lubridate)
 library(ggplot2)
+library(feather)
 ```
 
 ```{r load data}
@@ -34,6 +35,25 @@ df <- datasrc.load(params$directory)
 ```
 
 ```{r}
-g <- ggplot(df, aes(x = num.entities, y = mem.used, color = member)) + geom_point()
+df_ <- df %>% filter(
+  as.POSIXct("2017-04-30 07:37", tz = "UTC") <= time,
+  #time <= as.POSIXct("2017-04-30 07:37", tz = "UTC"),
+  num.entities > 100
+) %>%
+  mutate(base_time = floor(as.numeric(time) / 5)) %>%
+  group_by(base_time) %>%
+  summarize(
+    n = n(),
+    num.entities = mean(num.entities),
+    mem.used = sum(mem.used)
+  ) %>%
+  filter(n - lag(n, order_by = base_time) >= 0)
+#g <- ggplot(df, aes(x = num.entities, y = mem.used, color = member)) + geom_point()
+#g <- ggplot(df, aes(x = time, y = num.entities, color = member)) + geom_point()
+#g <- ggplot(df_, aes(x = time, y = mem.used, color = member)) + geom_point()
+#g <- ggplot(df_, aes(x = base_time, y = mem.used)) + geom_point()
+g <- ggplot(df_, aes(x = base_time, y = n)) + geom_point()
+#g <- ggplot(df_, aes(x = num.entities, y = mem.used)) + geom_point()
 plot(g)
+summary(df_)
 ```
