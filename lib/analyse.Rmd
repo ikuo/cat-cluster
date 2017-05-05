@@ -13,32 +13,21 @@ library(data.table)
 ```
 
 ```{r load data}
-source('datasrc.cat.R')
-source('datasrc.sweeper.R')
-df.cat <- datasrc.cat.load(params$directory)
-df.sweeper <- datasrc.sweeper.load(params$directory)
+source('cat.R')
+source('sweeper.R')
+df.cat <- cat.load(params$directory)
+df.cat.bases <- cat.bases(df.cat)
+df.sweeper <- sweeper.load(params$directory)
 ```
 
 ```{r}
-df_ <- df %>% filter(
-  as.POSIXct("2017-04-30 07:37", tz = "UTC") <= time,
-  #time <= as.POSIXct("2017-04-30 07:37", tz = "UTC"),
-  num.entities > 100
-) %>%
-  mutate(base_time = floor(as.numeric(time) / 5)) %>%
-  group_by(base_time) %>%
-  summarize(
-    n = n(),
-    num.entities = mean(num.entities),
-    mem.used = sum(mem.used)
-  ) %>%
-  filter(n - lag(n, order_by = base_time) >= 0)
+df_ <- df.cat.bases
 #g <- ggplot(df, aes(x = num.entities, y = mem.used.redis, color = member)) + geom_point() + geom_line()
 #g <- ggplot(df, aes(x = time, y = mem.used, color = member)) + geom_point() + geom_line()
 #g <- ggplot(df, aes(x = num.entities, y = mem.used, color = member)) + geom_point()
 #g <- ggplot(df, aes(x = time, y = num.entities, color = member)) + geom_point()
 #g <- ggplot(df_, aes(x = time, y = mem.used, color = member)) + geom_point()
-#g <- ggplot(df_, aes(x = base_time, y = mem.used)) + geom_point()
+g <- ggplot(df_, aes(x = base_time, y = mem.used)) + geom_point()
 #g <- ggplot(df_, aes(x = base_time, y = n)) + geom_point()
 #g <- ggplot(df_, aes(x = num.entities, y = mem.used)) + geom_point()
 plot(g)

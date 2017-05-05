@@ -1,8 +1,8 @@
-datasrc.sweeper.files <- function(dir) {
+sweeper.files <- function(dir) {
   list.files(dir, pattern = "catcluster.*.profile.sweeper.log", recursive = TRUE, full.names = TRUE)
 }
 
-datasrc.sweeper.load.one <-function(file) {
+sweeper.load.one <-function(file) {
   fread(
     file,
     col.names = c('time', 'member', 'sweepables', 'sweeped', 'elapsed.sec')
@@ -13,6 +13,6 @@ datasrc.sweeper.load.one <-function(file) {
     )
 }
 
-datasrc.sweeper.load <- function(dir) {
-  rbindlist(lapply(datasrc.sweeper.files(dir), datasrc.sweeper.load.one))
+sweeper.load <- function(dir) {
+  rbindlist(lapply(sweeper.files(dir), sweeper.load.one))
 }
