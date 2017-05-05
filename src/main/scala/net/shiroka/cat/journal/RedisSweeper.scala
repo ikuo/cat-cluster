@@ -15,8 +15,9 @@ import akka.stream._
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import redis.RedisClient
-import net.shiroka._
-import cat.pb.journal.sweeper._
+import redis.protocol.MultiBulk
+import net.shiroka.cat.Config
+import net.shiroka.cat.pb.journal.sweeper._
 
 class RedisSweeper extends Actor with ActorLogging {
   import RedisSweeper._
@@ -42,7 +43,7 @@ class RedisSweeper extends Actor with ActorLogging {
 
   def receive = {
     case Start => start
-    case SweepAck(id) => deleteMetadata_(id).pipeTo(sender)
+    case SweepAck(id) => deleteMetadata(id).pipeTo(sender)
   }
 
   private def start: Unit = {
@@ -54,10 +55,11 @@ class RedisSweeper extends Actor with ActorLogging {
       .mapAsyncUnordered(parallelism = 20)(id =>
         (id match {
           case id @ sweepableId(name) =>
-            profiler ! id
+            profiler ! 'Sweepable
             regions.getOrElseUpdate(name, ClusterSharding(system).shardRegion(name))
               .ask(Sweep(id))(2.seconds).mapTo[SweepAck]
-              .flatMap(ack => deleteMetadata(ack.persistenceId))
+              .flatMap(deleteMetadata)
+              .map(_.foreach(_ => profiler ! 'Sweeped))
           case id => Future.failed(new RuntimeException(s"Malformed persistence Id: $id"))
         }).transform(identity, error("Failed to sweep entity"))).withAttributes(supervisionStrategy(resumingDecider))
       .runWith(Sink.ignore)
@@ -69,18 +71,20 @@ class RedisSweeper extends Actor with ActorLogging {
       }
   }
 
-  private def deleteMetadata(id: String): Future[_] = self.ask(SweepAck(id))(2.seconds)
-  private def deleteMetadata_(id: String): Future[_] =
+  private def deleteMetadata(ack: SweepAck) = self.ask(ack)(2.seconds).mapTo[Option[_]]
+  private def deleteMetadata(id: String): Future[Option[_]] =
     if (id.nonEmpty) {
       import RedisKeys._
       val tx = redis.transaction()
       tx.del(highestSequenceNrKey(id))
       tx.srem(identifiersKey, id)
-      tx.exec()
-    } else Future.successful(())
+      tx.exec().map(Some(_))
+    } else Future.successful(None)
 }
 
-object RedisSweeper {
+object RedisSweeper extends Config {
+  val configKey = "journal.redis-sweeper"
+  val stdout = config.getBoolean("stdout")
   final object Start
   private final object Sweeped
 
@@ -89,20 +93,26 @@ object RedisSweeper {
     import java.text.SimpleDateFormat
     implicit val logger = log
     implicit val ec = context.dispatcher
-    private[this] var numIds: Long = 0
+    private[this] var numSweepables: Long = 0
+    private[this] var numSweeped: Long = 0
     private[this] var started: Long = now
     final val filename = "log/profile.sweeper.log"
     lazy val timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").format(new java.util.Date)
 
     def receive = {
-      case persistenceId: String => numIds += 1
+      case 'Sweepable => numSweepables += 1
+      case 'Sweeped => numSweeped += 1
       case 'Finish => finish
     }
 
     def finish: Unit = {
-      val line = Seq(timestamp, sys.env("AKKA_HOSTNAME"), numIds, (now - started)).mkString("\t")
-      val out = new PrintWriter(new FileOutputStream(new File(filename), true))
-      try { out.println(line) } finally { out.close() }
+      val line = Seq(timestamp, sys.env("AKKA_HOSTNAME"), numSweepables, numSweeped, (now - started))
+        .mkString("\t")
+      if (stdout) { println(line) }
+      else {
+        val out = new PrintWriter(new FileOutputStream(new File(filename), true))
+        try { out.println(line) } finally { out.close() }
+      }
       self ! PoisonPill
     }
   }
