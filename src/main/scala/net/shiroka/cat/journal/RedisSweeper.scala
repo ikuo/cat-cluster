@@ -62,7 +62,8 @@ class RedisSweeper extends Actor with ActorLogging {
               .flatMap(deleteMetadata)
               .map(_.foreach(_ => profiler ! 'Sweeped))
           case id => Future.failed(new RuntimeException(s"Malformed persistence Id: $id"))
-        }).transform(identity, error("Failed to sweep entity"))).withAttributes(supervisionStrategy(resumingDecider))
+        }).transform(identity, error("Failed to sweep entity")))
+      .withAttributes(supervisionStrategy(resumingDecider))
       .runWith(Sink.ignore)
       .transform(identity, error("Failed to sweep entities"))
       .onComplete {

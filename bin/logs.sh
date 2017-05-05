@@ -24,9 +24,12 @@ function pull {
 
 function pull_from_docker_compose {
   target=./log
-  sudo docker ps --format '{{.Names}}' \
-    | grep '^catcluster_cat' \
-    | xargs -n 1 -I {} sudo docker cp {}:/opt/cat-cluster/log/profile.log $target/{}.profile.log
+
+  for name in profile profile.sweeper; do
+    sudo docker ps --format '{{.Names}}' \
+      | grep '^catcluster_cat' \
+      | xargs -n 1 -I {} sudo docker cp {}:/opt/cat-cluster/log/${name}.log $target/{}.${name}.log
+  done
 }
 
 function pull_from_ec2 {
