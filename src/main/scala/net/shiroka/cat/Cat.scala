@@ -29,7 +29,7 @@ class Cat extends PersistentActor with ActorLogging {
     case RespondToSweep => deleteMessages(lastSequenceNr)
     case _: DeleteMessagesSuccess => ackAndStop(persistenceId)
     case msg: DeleteMessagesFailure =>
-      log.error("Failed to delete messages", msg.cause)
+      log.error(msg.cause, "Failed to delete messages")
       ackAndStop("")
   }
 
