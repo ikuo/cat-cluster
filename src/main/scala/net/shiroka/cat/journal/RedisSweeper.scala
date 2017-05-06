@@ -70,7 +70,7 @@ class RedisSweeper extends Actor with ActorLogging {
       .onComplete {
         case _ =>
           profiler ! 'Finish
-          system.scheduler.scheduleOnce(intermission, self, Start)
+          system.scheduler.scheduleOnce(interval, self, Start)
       }
   }
 
@@ -89,7 +89,8 @@ object RedisSweeper extends Config {
   val configKey = "journal.redis-sweeper"
   val stdout = config.as[Boolean]("stdout")
   val parallelism = config.as[Int]("parallelism")
-  val intermission = config.as[FiniteDuration]("intermission")
+  val interval = config.as[FiniteDuration]("interval")
+  val profilerInterval = config.as[FiniteDuration]("profiler.interval")
   val warningTolerance = config.as[Double]("warning-tolerance")
   val timeout = Timeout(config.getConfig("timeout"))
   final object Start
@@ -109,26 +110,46 @@ object RedisSweeper extends Config {
     private[this] var numSweepables: Long = 0
     private[this] var numSweeped: Long = 0
     private[this] var started: Long = now
+    private[this] var scheduledEmit: Option[Cancellable] = None
     final val filename = "log/profile.sweeper.log"
     lazy val timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").format(new java.util.Date)
+
+    override def preStart: Unit = {
+      scheduleEmit
+      super.preStart()
+    }
 
     def receive = {
       case 'Sweepable => numSweepables += 1
       case 'Sweeped => numSweeped += 1
+      case 'Emit => { emit; scheduleEmit }
       case err: Throwable =>
         numErrors += 1
         if (tooManyErrors_?) log.warning("Failed to sweep entity. {}", err.getMessage)
-      case 'Finish => finish
+      case 'Finish => { emit; finish }
     }
 
-    private def finish: Unit = {
-      val line = Seq(timestamp, sys.env("AKKA_HOSTNAME"), numSweepables, numSweeped, (now - started))
-        .mkString("\t")
+    private def scheduleEmit: Unit = {
+      scheduledEmit.foreach(_.cancel)
+      scheduledEmit = Some(context.system.scheduler.scheduleOnce(profilerInterval, self, 'Emit))
+    }
+
+    private def emit: Unit = {
+      val line = Seq(
+        timestamp, sys.env("AKKA_HOSTNAME"), started,
+        numSweepables, numSweeped, numErrors,
+        (now - started)
+      ).mkString("\t")
+
       if (stdout) { println(line) }
       else {
         val out = new PrintWriter(new FileOutputStream(new File(filename), true))
         try { out.println(line) } finally { out.close() }
       }
+    }
+
+    private def finish: Unit = {
+      scheduledEmit.foreach(_.cancel)
       self ! PoisonPill
     }
 
