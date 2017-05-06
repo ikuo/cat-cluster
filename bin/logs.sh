@@ -27,9 +27,9 @@ function pull_from_docker_compose {
 
   set +e
   for name in profile profile.sweeper; do
-    sudo docker ps --format '{{.Names}}' \
+    docker ps --format '{{.Names}}' \
       | grep '^catcluster_cat' \
-      | xargs -n 1 -I {} sudo docker cp {}:/opt/cat-cluster/log/${name}.log $target/{}.${name}.log
+      | xargs -n 1 -I {} docker cp {}:/opt/cat-cluster/log/${name}.log $target/{}.${name}.log
   done
   set -e
 }
