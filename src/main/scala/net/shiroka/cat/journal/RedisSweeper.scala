@@ -5,7 +5,6 @@ import scala.concurrent.duration._
 import scala.collection.mutable
 import akka.event.LoggingAdapter
 import akka.actor._
-import akka.pattern.{ ask, pipe }
 import akka.cluster.sharding._
 import akka.cluster.singleton._
 import akka.persistence.redis.{ RedisUtils, RedisKeys }
@@ -13,6 +12,7 @@ import akka.persistence.query._
 import akka.persistence.query.journal.redis._
 import akka.stream._
 import akka.stream.scaladsl._
+import akka.routing.RoundRobinPool
 import com.typesafe.config.{ ConfigFactory, Config => TSConfig }
 import redis.RedisClient
 import redis.protocol.MultiBulk
@@ -21,6 +21,7 @@ import net.shiroka.cat.Config
 import net.shiroka.cat.pb.journal.sweeper._
 
 class RedisSweeper extends Actor with ActorLogging {
+  import akka.pattern.ask
   import RedisSweeper._
 
   implicit val system = context.system
@@ -32,26 +33,23 @@ class RedisSweeper extends Actor with ActorLogging {
 
   val readJournal = PersistenceQuery(system)
     .readJournalFor[ScalaReadJournal]("akka-persistence-redis.read-journal")
-  val redis: RedisClient =
-    RedisUtils.create(ConfigFactory.load.getConfig("akka-persistence-redis.journal"))
+
+  val workers = context.actorOf(RoundRobinPool(20).props(Props[DeleteWorker]), "delete-workers")
 
   override def preStart: Unit = {
     super.preStart()
     self ! Start
   }
 
-  override def postStop: Unit = try redis.stop() finally super.postStop()
-
   def receive = {
     case Start => start
-    case SweepAck(id) => deleteMetadata(id).pipeTo(sender)
   }
 
   private def start: Unit = {
     import ActorAttributes.supervisionStrategy
     import Supervision.resumingDecider
     import net.shiroka.cat.syntax.TapFailure
-    val profiler = context.actorOf(Props(classOf[IterationProfiler], redis), "iteration-profiler")
+    val profiler = context.actorOf(Props(classOf[IterationProfiler]), "iteration-profiler")
 
     readJournal.currentPersistenceIds
       .mapAsyncUnordered(parallelism = 20)(id =>
@@ -74,15 +72,7 @@ class RedisSweeper extends Actor with ActorLogging {
       }
   }
 
-  private def deleteMetadata(ack: SweepAck) = self.ask(ack)(timeout.deleteMetadata).mapTo[Option[_]]
-  private def deleteMetadata(id: String): Future[Option[_]] =
-    if (id.nonEmpty) {
-      import RedisKeys._
-      val tx = redis.transaction()
-      tx.del(highestSequenceNrKey(id))
-      tx.srem(identifiersKey, id)
-      tx.exec().map(Some(_))
-    } else Future.successful(None)
+  private def deleteMetadata(ack: SweepAck) = workers.ask(ack)(timeout.deleteMetadata).mapTo[Option[_]]
 }
 
 object RedisSweeper extends Config {
@@ -101,7 +91,30 @@ object RedisSweeper extends Config {
     val deleteMetadata = config.as[FiniteDuration]("delete-metadata")
   }
 
-  private class IterationProfiler(redis: RedisClient) extends Actor with ActorLogging {
+  private class DeleteWorker extends Actor {
+    import akka.pattern.pipe
+    implicit val system = context.system
+    implicit val ec = context.dispatcher
+    lazy val redis: RedisClient =
+      RedisUtils.create(ConfigFactory.load.getConfig("akka-persistence-redis.journal"))
+
+    def receive = {
+      case SweepAck(id) => deleteMetadata(id).pipeTo(sender)
+    }
+
+    private[this] def deleteMetadata(id: String): Future[Option[_]] =
+      if (id.nonEmpty) {
+        import RedisKeys._
+        val tx = redis.transaction()
+        tx.del(highestSequenceNrKey(id))
+        tx.srem(identifiersKey, id)
+        tx.exec().map(Some(_))
+      } else Future.successful(None)
+
+    override def postStop: Unit = try redis.stop() finally super.postStop()
+  }
+
+  private class IterationProfiler() extends Actor with ActorLogging {
     import java.io._
     import java.text.SimpleDateFormat
     implicit val logger = log
