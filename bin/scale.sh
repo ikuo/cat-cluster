@@ -16,7 +16,8 @@ function wait_until_num_entities {
   target=$1
   entities=0
   while [ $entities -lt $target ]; do
-    entities=$(ENV=small docker-compose exec --index=1 cat tail -1 log/profile.log|awk -F"\t" '{print $4}')
+    entities=$(ENV=small docker-compose exec --index=1 cat tail -1 log/profile.log 2> /dev/null | awk -F"\t" '{print $4}')
+    if [ -z $entities ]; then entities=-1; fi
     echo $entities
     sleep 2
   done

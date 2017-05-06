@@ -12,7 +12,7 @@ import akka.persistence.query._
 import akka.persistence.query.journal.redis._
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.routing.RoundRobinPool
+import akka.routing.SmallestMailboxPool
 import com.typesafe.config.{ ConfigFactory, Config => TSConfig }
 import redis.RedisClient
 import redis.protocol.MultiBulk
@@ -34,7 +34,7 @@ class RedisSweeper extends Actor with ActorLogging {
   val readJournal = PersistenceQuery(system)
     .readJournalFor[ScalaReadJournal]("akka-persistence-redis.read-journal")
 
-  val workers = context.actorOf(RoundRobinPool(40).props(Props[DeleteWorker]), "delete-workers")
+  val workers = context.actorOf(SmallestMailboxPool(40).props(Props[DeleteWorker]), "delete-workers")
 
   override def preStart: Unit = {
     super.preStart()
