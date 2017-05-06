@@ -11,10 +11,32 @@ sweeper.load.one <-function(file) {
   ) %>%
     mutate(
       time = parse_date_time2(time, "%Y-%m-%d %H:%M:%S"),
-      member = factor(member)
+      member = factor(member),
+      iteration = factor(iteration)
     )
 }
 
 sweeper.load <- function(dir) {
   rbindlist(lapply(sweeper.files(dir), sweeper.load.one))
+}
+
+sweeper.bases <- function(df) {
+  df %>%
+    mutate(base_time = floor(as.numeric(time) / 5)) %>%
+    group_by(base_time) %>%
+    summarize(
+      n = n(),
+      entities = quantile(entities, .95),
+      mem.used = sum(mem.used),
+      mem.used.redis = median(mem.used.redis)
+    )
+}
+
+sweeper.overview <- function(df) {
+  plots <- list(
+    ggplot(df, aes(x = time, y = sweepables, color = iteration)) + geom_point(),
+    ggplot(df, aes(x = time, y = elapsed.sec, color = iteration)) + geom_point()
+  )
+
+  Rmisc::multiplot(plotlist = plots, cols = 1)
 }

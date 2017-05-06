@@ -20,4 +20,5 @@ df.cat.bases <- cat.bases(df.cat)
 df.sweeper <- sweeper.load(params$directory)
 
 cat.overview(df.cat, df.cat.bases)
+sweeper.overview(df.sweeper)
 ```

@@ -112,7 +112,7 @@ object RedisSweeper extends Config {
     private[this] var started: Long = now
     private[this] var scheduledEmit: Option[Cancellable] = None
     final val filename = "log/profile.sweeper.log"
-    lazy val timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").format(new java.util.Date)
+    private def timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").format(new java.util.Date)
 
     override def preStart: Unit = {
       scheduleEmit
