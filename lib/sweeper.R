@@ -34,9 +34,11 @@ sweeper.bases <- function(df) {
 
 sweeper.overview <- function(df) {
   plots <- list(
+    ggplot(df, aes(x = time, y = elapsed.sec, color = iteration)) + geom_point(),
     ggplot(df, aes(x = time, y = sweepables, color = iteration)) + geom_point(),
-    ggplot(df, aes(x = time, y = elapsed.sec, color = iteration)) + geom_point()
+    ggplot(df, aes(x = time, y = sweeped, color = iteration)) + geom_point(),
+    ggplot(df, aes(x = time, y = errors, color = iteration)) + geom_point()
   )
 
-  Rmisc::multiplot(plotlist = plots, cols = 1)
+  Rmisc::multiplot(plotlist = plots, cols = 2)
 }
