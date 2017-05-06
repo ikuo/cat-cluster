@@ -7,7 +7,7 @@ function usage_exit {
 Usage:
   $0 pull [<instance-id>]
   $0 pack
-  $0 unpack
+  $0 unpack [<file>]
 EOS
   exit 1
 }
@@ -48,8 +48,9 @@ function pack {
 }
 
 function unpack {
-  base=./log
-  target=$base/logs.gz
+  set +u
+  target=${1:-./log/logs.gz}
+  set -u
   tar zxvf $target
 }
 

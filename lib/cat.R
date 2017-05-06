@@ -20,7 +20,7 @@ cat.load <- function(dir) {
 cat.bases <- function(df, start = NULL, end = NULL, entities.min = 1e+5) {
   if (!is.null(start)) { df <- df %>% filter(as.POSIXct(start, tz = "UTC") <= time) }
   if (!is.null(end))   { df <- df %>% filter(as.POSIXct(end, tz = "UTC") >= time) }
-  df %>% filter(entities > entities.min) %>%
+  df <- df %>% filter(entities > entities.min) %>%
     mutate(base_time = floor(as.numeric(time) / 5)) %>%
     group_by(base_time) %>%
     summarize(
@@ -29,10 +29,8 @@ cat.bases <- function(df, start = NULL, end = NULL, entities.min = 1e+5) {
       mem.used = sum(mem.used),
       mem.used.redis = median(mem.used.redis)
     ) %>%
-    filter(
-      n >= lag(n, order_by = base_time),
-      n <= lag(n, order_by = base_time) * 1.5
-    )
+    filter(n == lag(n, order_by = base_time))
+  df %>% filter(n <= quantile(df$n, .95))
 }
 
 cat.overview <- function(df = NULL, df.bases = NULL) {
