@@ -26,7 +26,7 @@ function pull_from_docker_compose {
   target=./log
 
   set +e
-  for name in profile profile.sweeper; do
+  for name in gc profile profile.sweeper; do
     docker ps --format '{{.Names}}' \
       | grep '^catcluster_cat' \
       | xargs -n 1 -I {} docker cp {}:/opt/cat-cluster/log/${name}.log $target/{}.${name}.log

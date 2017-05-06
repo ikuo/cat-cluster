@@ -22,7 +22,7 @@ services:
     environment:
       <<: *environment
       CONFIG: /cat-${ENV}.conf
-      MAX_HEAP_SIZE: 1250m
+      MAX_HEAP_SIZE: 2000m
       AKKA_HOSTNAME:
 
   sensor:
