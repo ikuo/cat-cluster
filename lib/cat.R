@@ -5,7 +5,7 @@ cat.files <- function(dir) {
 cat.load.one <- function(file) {
   fread(
     file,
-    col.names = c('time', 'member', 'remember.entities', 'num.entities', 'mem.used.redis', 'mem.used', 'mem.total', 'mem.free', 'mem.max')
+    col.names = c('time', 'member', 'remember.entities', 'entities', 'mem.used.redis', 'mem.used', 'mem.total', 'mem.free', 'mem.max')
   ) %>%
     mutate(
       time = parse_date_time2(time, "%Y-%m-%d %H:%M:%S"),
@@ -17,16 +17,17 @@ cat.load <- function(dir) {
   rbindlist(lapply(cat.files(dir), cat.load.one))
 }
 
-cat.bases <- function(df, start = NULL, end = NULL) {
+cat.bases <- function(df, start = NULL, end = NULL, entities.min = 1e+5) {
   if (!is.null(start)) { df <- df %>% filter(as.POSIXct(start, tz = "UTC") <= time) }
   if (!is.null(end))   { df <- df %>% filter(as.POSIXct(end, tz = "UTC") >= time) }
-  df %>% filter(num.entities > 100) %>%
+  df %>% filter(entities > entities.min) %>%
     mutate(base_time = floor(as.numeric(time) / 5)) %>%
     group_by(base_time) %>%
     summarize(
       n = n(),
-      num.entities = mean(num.entities),
-      mem.used = sum(mem.used)
+      entities = quantile(entities, .95),
+      mem.used = sum(mem.used),
+      mem.used.redis = median(mem.used.redis)
     ) %>%
     filter(
       n >= lag(n, order_by = base_time),
@@ -36,14 +37,17 @@ cat.bases <- function(df, start = NULL, end = NULL) {
 
 cat.overview <- function(df = NULL, df.bases = NULL) {
   plots <- list(
+    ggplot(df, aes(x = time, y = entities, color = member)) + geom_point(),
     ggplot(df, aes(x = time, y = mem.used, color = member)) + geom_point() + geom_line(),
-    ggplot(df, aes(x = time, y = num.entities, color = member)) + geom_point(),
-    ggplot(df, aes(x = num.entities, y = mem.used, color = member)) + geom_point(),
-    ggplot(df, aes(x = num.entities, y = mem.used.redis, color = member)) + geom_point(),
+    ggplot(df, aes(x = entities, y = mem.used, color = member)) + geom_point(),
+    ggplot(df, aes(x = entities, y = mem.used.redis, color = member)) + geom_point(),
 
     ggplot(df.bases, aes(x = base_time, y = n)) + geom_point(),
     ggplot(df.bases, aes(x = base_time, y = mem.used)) + geom_point(),
-    ggplot(df.bases, aes(x = num.entities, y = mem.used)) + geom_point()
+    ggplot(df.bases, aes(x = entities, y = mem.used)) + geom_point() +
+      xlim(0, max(df.bases$entities)) + ylim(0, max(df.bases$mem.used)),
+    ggplot(df.bases, aes(x = entities, y = mem.used.redis)) + geom_point() +
+      xlim(0, max(df.bases$entities)) + ylim(0, max(df.bases$mem.used.redis))
   )
 
   Rmisc::multiplot(plotlist = plots, cols = 2)
