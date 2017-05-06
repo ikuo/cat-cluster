@@ -60,7 +60,7 @@ class Profiler extends Actor {
       try { out.println(line) } finally { out.close() }
     }
 
-    if (used.toDouble / rt.maxMemory > 0.85) {
+    if (shutdownOnMemoryShortage && used.toDouble / rt.maxMemory > 0.85) {
       println("System.exit() due to too much memory usage")
       sys.exit(1)
     }
@@ -76,6 +76,7 @@ object Profiler extends Config {
   val interval = config.as[FiniteDuration]("interval")
   val stdout = config.as[Boolean]("stdout")
   val filename = "log/profile.log"
+  val shutdownOnMemoryShortage = false
 
   object Start
 
