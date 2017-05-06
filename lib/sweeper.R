@@ -5,7 +5,9 @@ sweeper.files <- function(dir) {
 sweeper.load.one <-function(file) {
   fread(
     file,
-    col.names = c('time', 'member', 'sweepables', 'sweeped', 'elapsed.sec')
+    col.names =
+      c('time', 'member', 'iteration',
+        'sweepables', 'sweeped', 'errors', 'elapsed.sec')
   ) %>%
     mutate(
       time = parse_date_time2(time, "%Y-%m-%d %H:%M:%S"),
