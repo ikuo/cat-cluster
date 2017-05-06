@@ -40,6 +40,8 @@ function lamp {
   ENV=small docker-compose scale sensor=5
   wait_until_num_entities 1500000
   ENV=small docker-compose scale sensor=6
+  wait_until_num_entities 2000000
+  ENV=small docker-compose scale sensor=7
 }
 
 subcommand=$1

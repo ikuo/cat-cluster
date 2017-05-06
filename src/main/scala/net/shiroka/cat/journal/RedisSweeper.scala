@@ -34,7 +34,7 @@ class RedisSweeper extends Actor with ActorLogging {
   val readJournal = PersistenceQuery(system)
     .readJournalFor[ScalaReadJournal]("akka-persistence-redis.read-journal")
 
-  val workers = context.actorOf(SmallestMailboxPool(40).props(Props[DeleteWorker]), "delete-workers")
+  val workers = context.actorOf(SmallestMailboxPool(200).props(Props[DeleteWorker]), "delete-workers")
 
   override def preStart: Unit = {
     super.preStart()
