@@ -56,7 +56,7 @@ function unpack {
 }
 
 function clean {
-  mv ./logs/*.log /var/tmp/
+  mv ./log/*.log /var/tmp/
 }
 
 subcommand=$1
