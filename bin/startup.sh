@@ -16,7 +16,6 @@ java \
   -Xloggc:./log/gc.log \
   -XX:+PrintGCDetails \
   -XX:+PrintGCDateStamps \
-  -XX:+UseG1GC \
   -Dakka.cluster.seed-nodes.0=$SEED_ADDR \
   -Dconfig.resource=$CONFIG \
   -Dcom.sun.management.jmxremote \
