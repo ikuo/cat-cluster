@@ -8,6 +8,7 @@ Usage:
   $0 pull [<instance-id>]
   $0 pack
   $0 unpack [<file>]
+  $0 clean
 EOS
   exit 1
 }
@@ -54,6 +55,10 @@ function unpack {
   tar zxvf $target
 }
 
+function clean {
+  mv ./logs/*.log /var/tmp/
+}
+
 subcommand=$1
 shift
 
@@ -61,5 +66,6 @@ case $subcommand in
   pull) pull "$@" ;;
   pack) pack "$@" ;;
   unpack) unpack "$@" ;;
+  clean) clean "$@" ;;
   *) usage_exit ;;
 esac
