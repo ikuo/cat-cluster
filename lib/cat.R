@@ -57,3 +57,12 @@ cat.overview <- function(df = NULL, df.bases = NULL) {
 
   Rmisc::multiplot(plotlist = plots, cols = 2)
 }
+
+cat.plot.mem <- function(df.bases) {
+  g <- ggplot(df.bases, aes(x = entities, y = mem.used / 1e+3)) + geom_point() +
+      xlim(0, max(df.bases$entities)) + ylim(0, max(df.bases$mem.used / 1e+3)) +
+      geom_smooth(method = "lm") +
+      xlab('Num of Actors') +
+      ylab('Total Memory Usage [GB]')
+  plot(g)
+}

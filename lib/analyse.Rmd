@@ -22,3 +22,12 @@ df.sweeper <- sweeper.load(params$directory)
 cat.overview(df.cat, df.cat.bases)
 sweeper.overview(df.sweeper)
 ```
+
+```{r}
+source('cat.R')
+cat.plot.mem(df.cat.bases)
+```
+```{r}
+source('sweeper.R')
+sweeper.plot.sweepables(df.sweeper)
+```

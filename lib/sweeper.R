@@ -12,7 +12,7 @@ sweeper.load.one <-function(file) {
     mutate(
       time = parse_date_time2(time, "%Y-%m-%d %H:%M:%S"),
       member = factor(member),
-      iteration = factor(iteration)
+      iteration = factor(dense_rank(iteration))
     )
 }
 
@@ -41,4 +41,11 @@ sweeper.overview <- function(df) {
   )
 
   Rmisc::multiplot(plotlist = plots, cols = 2)
+}
+
+sweeper.plot.sweepables <- function(df) {
+  g <- ggplot(df, aes(x = time, y = sweepables, color = iteration)) +
+    geom_point() +
+    ylab('Num of sweepables processed')
+  plot(g)
 }
