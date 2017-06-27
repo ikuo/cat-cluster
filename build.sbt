@@ -11,12 +11,13 @@ lazy val root = (project in file(".")).
       version      := "0.1.0-SNAPSHOT"
     )),
     name := "cat-cluster",
-    resolvers += ivyLocal,
+    resolvers ++= Seq(ivyLocal, tanukkii007),
     libraryDependencies ++= Seq(
       akka("cluster"),
       akka("cluster-sharding"),
       akkaRedis,
       ficus,
+      splitBrainResolver,
       akka("testkit") % Test,
       specs2 % Test
     ),
