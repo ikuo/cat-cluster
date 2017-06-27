@@ -2,6 +2,7 @@ target/
 log/*.*
 log/figure/
 *.feather
+*.pyc
 .Rhistory
 
 # Elastic Beanstalk Files

@@ -1,10 +1,15 @@
 version: '2'
 
+networks:
+  faulty-cat:
+
 services:
   redis:
     image: redis:2.8.23
     expose:
       - "6379"
+    networks:
+      - faulty-cat
 
   seed: &seed
     image: ${USER}/cat-cluster:latest
@@ -15,6 +20,8 @@ services:
       SEED_ADDR: akka.tcp://cluster@seed:2551
       AKKA_HOSTNAME: seed
       REDIS_HOST: redis
+    networks:
+      - faulty-cat
 
   cat:
     image: ${USER}/cat-cluster:latest
@@ -24,6 +31,8 @@ services:
       CONFIG: /cat-${ENV}.conf
       MAX_HEAP_SIZE: 2000m
       AKKA_HOSTNAME:
+    networks:
+      - faulty-cat
 
   sensor:
     image: ${USER}/cat-cluster:latest
@@ -33,3 +42,14 @@ services:
       CONFIG: /sensor-${ENV}.conf
       MAX_HEAP_SIZE: 30m
       AKKA_HOSTNAME:
+    networks:
+      - faulty-cat
+
+  gremlins:
+    image: qualimente/gremlins
+    volumes:
+      - ./gremlins:/app/gremlins/profiles
+    command: gremlins -m gremlins.profiles.sensor -p sensor.profile
+    network_mode: "service:sensor"
+    cap_add:
+      - NET_ADMIN
