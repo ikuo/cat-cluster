@@ -49,7 +49,7 @@ services:
     image: qualimente/gremlins
     volumes:
       - ./gremlins:/app/gremlins/profiles
-    command: gremlins -m gremlins.profiles.sensor -p sensor.profile
-    network_mode: "service:sensor"
+    command: gremlins -m gremlins.profiles.partition -p partition.profile
+    network_mode: "service:seed"
     cap_add:
       - NET_ADMIN
